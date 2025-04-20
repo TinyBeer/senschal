@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"seneschal/config"
+	"strconv"
 	"strings"
 )
 
@@ -107,6 +108,48 @@ type File struct {
 	Path   string
 }
 
+// GetSize implements IFile.
+func (f *File) GetSize() (int64, error) {
+	var size int64
+	if f.Remote == nil {
+		fileInfo, err := os.Stat(f.Path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				fmt.Println("文件不存在")
+			} else {
+				fmt.Printf("读取文件信息时出错: %v\n", err)
+			}
+			return 0, err
+		}
+		size = fileInfo.Size()
+	} else {
+		se, err := NewSSHExecutor(f.Remote.SSH)
+		if err != nil {
+			return 0, err
+		}
+
+		session, err := se.newSession()
+		if err != nil {
+			return 0, err
+		}
+		defer session.Close()
+
+		// 执行命令获取文件大小
+		output, err := session.CombinedOutput("stat -c %s " + f.Path)
+		if err != nil {
+			return 0, err
+		}
+
+		// 处理输出结果
+		sizeStr := strings.TrimSpace(string(output))
+		size, err = strconv.ParseInt(sizeStr, 10, 64)
+		if err != nil {
+			return 0, err
+		}
+	}
+	return size, nil
+}
+
 func NewFile(filePath string) (*File, error) {
 	splited := strings.Split(filePath, ":")
 	if len(splited) > 2 {
@@ -145,7 +188,7 @@ func (f *File) GetReader() (io.Reader, error) {
 }
 
 // GetWriter implements IFile.
-func (f *File) GetWriter() (io.Writer, error) {
+func (f *File) GetWriter() (io.WriteCloser, error) {
 	if f.Remote == nil {
 		return nil, errors.New("loacl writer is not supported yet")
 	}
@@ -183,7 +226,8 @@ func (f *File) GetWriter() (io.Writer, error) {
 
 type IFile interface {
 	GetReader() (io.Reader, error)
-	GetWriter() (io.Writer, error)
+	GetWriter() (io.WriteCloser, error)
+	GetSize() (int64, error)
 }
 
 var _ IFile = new(File)

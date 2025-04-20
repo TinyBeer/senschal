@@ -10,23 +10,19 @@ import (
 
 type SSHConfig struct {
 	Alias string `mapstructure:"alias"`
-	SSH   struct {
-		User     string `mapstructure:"user"`
-		Password string `mapstructure:"password"`
-		Host     string `mapstructure:"host"`
-		Port     int    `mapstructure:"port"`
-	} `mapstructure:"ssh"`
+	SSH   *SSH   `mapstructure:"ssh"`
+}
+type SSH struct {
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
 }
 
 func NewSSHConfig() *SSHConfig {
 	config := &SSHConfig{
 		Alias: "",
-		SSH: struct {
-			User     string `mapstructure:"user"`
-			Password string `mapstructure:"password"`
-			Host     string `mapstructure:"host"`
-			Port     int    `mapstructure:"port"`
-		}{
+		SSH: &SSH{
 			User:     "",
 			Password: "",
 			Host:     "",
