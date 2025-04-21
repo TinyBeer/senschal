@@ -3,8 +3,10 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"seneschal/config"
 	"seneschal/tool"
+	"strings"
 )
 
 type EnvMgrDocker struct {
@@ -91,9 +93,40 @@ func checkDocker(e *tool.SSHExecutor, dc *config.Docker) error {
 
 // Deploy implements IEnvMgr.
 func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
+	if e.cnf == nil && !e.cnf.Enable {
+		return nil
+	}
+	fmt.Println("check docker ...")
+	se, err := tool.NewSSHExecutor(c)
+	if err != nil {
+		return err
+	}
+
 	// 1. check docker installment
-	// 1.1 try to install docker with net
-	// 1.2 try to install docker with deb
+	output, err := se.ExecuteCommand("docker version --format 'docker: {{.Client.Version}}'")
+	if err != nil {
+		if err.Error() != "Process exited with status 127" {
+			fmt.Println("failed to check docker installment")
+			return err
+		} else {
+			// 1.1 try to install docker with net
+			log.Println("install docker with internet ...")
+			output, err = se.ExecuteCommand("curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun")
+			if err != nil {
+				return fmt.Errorf("failed to install docker with internet, err: %v", err)
+			}
+			result := string(bytes.Trim(output, " \n"))
+			if strings.Contains(result, "Server: Docker Engine - Community") {
+				log.Println("install docker with internet ok...")
+				return nil
+			}
+			// 1.2 try to install docker with deb
+			// 1.2.1 copy file demanded
+			// 1.2.2 run install script
+		}
+	} else {
+		fmt.Println(string(bytes.Trim(output, " \n")))
+	}
 	// 2. check docker images
 	// 2.2 load missing images
 	return nil

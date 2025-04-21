@@ -27,10 +27,196 @@ const (
 type Path struct {
 	Type   PathType
 	Remote *Remote
-	Path   string
+
+	Name         string
+	BasePath     string
+	RelativePath string
+	Children     []*Path
+	Size         int64
 }
 
-func NewPath(path string) (*Path, error) {
+func (p *Path) Show() {
+	fmt.Printf("%s %d %t\n", filepath.Join(p.BasePath, p.RelativePath, p.Name), p.Size, p.Type == PathType_Dir)
+	for _, child := range p.Children {
+		child.Show()
+	}
+}
+
+func (p *Path) syncStat() error {
+	_, err := p.IsDir()
+	if err != nil {
+		return err
+	}
+	size, err := p.getSize()
+	if err != nil {
+		return err
+	}
+	p.Size = size
+	if p.Type == PathType_Dir {
+		dirName := filepath.Join(p.BasePath, p.RelativePath, p.Name)
+		if p.Remote == nil {
+			entries, err := os.ReadDir(dirName)
+			if err != nil {
+				return err
+			}
+			relativePath := filepath.Join(p.RelativePath, p.Name)
+			for _, e := range entries {
+				subP := &Path{
+					Type:         PathType_File,
+					Remote:       p.Remote,
+					Name:         e.Name(),
+					BasePath:     p.BasePath,
+					RelativePath: relativePath,
+					Children:     nil,
+				}
+				if e.IsDir() {
+					subP.Type = PathType_Dir
+				}
+				p.Children = append(p.Children, subP)
+			}
+		} else {
+			se, err := NewSSHExecutor(p.Remote.SSH)
+			if err != nil {
+				return err
+			}
+			session, err := se.NewSession()
+			if err != nil {
+				return err
+			}
+			defer session.Close()
+
+			// 执行 stat 命令获取文件信息
+			output, err := session.CombinedOutput(fmt.Sprintf("ls -p " + dirName))
+			if err != nil {
+				return err
+			}
+
+			result := strings.TrimSpace(string(output))
+			fmt.Println(result)
+		}
+		for _, child := range p.Children {
+			child.syncStat()
+		}
+	}
+	return nil
+}
+
+func (p *Path) IsExist() (bool, error) {
+	filePath := filepath.Join(p.BasePath, p.RelativePath, p.Name)
+	if p.Remote == nil {
+		_, err := os.Stat(filePath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return false, nil
+			}
+			return false, err
+		}
+		return true, nil
+	} else {
+		se, err := NewSSHExecutor(p.Remote.SSH)
+		if err != nil {
+			return false, err
+		}
+
+		session, err := se.newSession()
+		if err != nil {
+			return false, err
+		}
+		defer session.Close()
+
+		cmd := fmt.Sprintf("if stat %s &> /dev/null; then echo exists; fi", filePath)
+		output, err := session.CombinedOutput(cmd)
+		if err != nil {
+			return false, err
+		}
+		return string(output) == "exists\n", nil
+	}
+}
+
+func (p *Path) IsDir() (bool, error) {
+	if p.Type != PathType_Unknown {
+		return p.Type == PathType_Dir, nil
+	}
+	name := filepath.Join(p.BasePath, p.RelativePath, p.Name)
+	if p.Remote == nil {
+		fileInfo, err := os.Stat(name)
+		if err != nil {
+			return false, err
+		}
+		if fileInfo.IsDir() {
+			p.Type = PathType_Dir
+		} else {
+			p.Type = PathType_File
+		}
+	} else {
+		se, err := NewSSHExecutor(p.Remote.SSH)
+		if err != nil {
+			return false, err
+		}
+
+		session, err := se.newSession()
+		if err != nil {
+			return false, err
+		}
+		defer session.Close()
+
+		// 执行命令获取文件大小
+		output, err := session.CombinedOutput("stat -c %F " + name)
+		if err != nil {
+			return false, err
+		}
+
+		// 处理输出结果
+		result := strings.TrimSpace(string(output))
+		if strings.Contains(result, "directory") {
+			p.Type = PathType_Dir
+		} else if strings.Contains(result, "regular file") {
+			p.Type = PathType_File
+		} else {
+			return false, errors.New("unknown path type")
+		}
+	}
+	return p.Type == PathType_Dir, nil
+}
+
+func (p *Path) getSize() (int64, error) {
+	name := filepath.Join(p.BasePath, p.RelativePath, p.Name)
+	var size int64
+	if p.Remote == nil {
+		fileInfo, err := os.Stat(name)
+		if err != nil {
+			return 0, err
+		}
+		size = fileInfo.Size()
+	} else {
+		se, err := NewSSHExecutor(p.Remote.SSH)
+		if err != nil {
+			return 0, err
+		}
+
+		session, err := se.newSession()
+		if err != nil {
+			return 0, err
+		}
+		defer session.Close()
+
+		// 执行命令获取文件大小
+		output, err := session.CombinedOutput("stat -c %s " + name)
+		if err != nil {
+			return 0, err
+		}
+
+		// 处理输出结果
+		sizeStr := strings.TrimSpace(string(output))
+		size, err = strconv.ParseInt(sizeStr, 10, 64)
+		if err != nil {
+			return 0, err
+		}
+	}
+	return size, nil
+}
+
+func newPath(path string) (*Path, error) {
 	splited := strings.Split(path, ":")
 	if len(splited) > 2 {
 		return nil, errors.New("invalid path: " + path)
@@ -47,59 +233,29 @@ func NewPath(path string) (*Path, error) {
 				Remote: &Remote{
 					SSH: sc,
 				},
-				Path: splited[1],
+				BasePath: splited[1],
 			}
 		} else {
 			return nil, fmt.Errorf("未找到%s的配置信息", alias)
 		}
-		se, err := NewSSHExecutor(p.Remote.SSH)
-		if err != nil {
-			return nil, err
-		}
-		session, err := se.NewSession()
-		if err != nil {
-			return nil, err
-		}
-		defer session.Close()
-
-		// 执行 stat 命令获取文件信息
-		output, err := session.CombinedOutput(fmt.Sprintf("stat -c %%F %s", p.Path))
-		if err != nil {
-			return nil, err
-		}
-
-		result := strings.TrimSpace(string(output))
-		if strings.Contains(result, "directory") {
-			p.Type = PathType_Dir
-		} else if strings.Contains(result, "regular file") {
-			p.Type = PathType_File
-		}
 	} else {
 		p = &Path{
-			Remote: nil,
-			Path:   path,
-		}
-		// 获取文件信息
-		fileInfo, err := os.Stat(p.Path)
-		if err != nil {
-			if !os.IsNotExist(err) {
-				return nil, err
-			}
-		}
-
-		if fileInfo.IsDir() {
-			p.Type = PathType_Dir
-		} else {
-			p.Type = PathType_File
+			Remote:   nil,
+			BasePath: path,
+			Name:     "",
 		}
 	}
 	return p, nil
 }
 
+func NewPath(path string) (*Path, error) {
+	return newPath(path)
+}
+
 func (p *Path) NewFile(fileName string) (*File, error) {
 	return &File{
 		Remote: p.Remote,
-		Path:   filepath.Join(p.Path, fileName),
+		Path:   filepath.Join(p.BasePath, p.RelativePath, p.Name, fileName),
 	}, nil
 }
 
