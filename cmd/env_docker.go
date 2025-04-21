@@ -122,7 +122,16 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 			}
 			// 1.2 try to install docker with deb
 			// 1.2.1 copy file demanded
+			err = tool.Copy(config.DOCKER_Deb_DIR, c.Alias+":ops")
+			if err != nil {
+				return err
+			}
 			// 1.2.2 run install script
+			output, err := se.ExecuteCommand("bash ./ops/docker_debs/install.sh")
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(output))
 		}
 	} else {
 		fmt.Println(string(bytes.Trim(output, " \n")))
