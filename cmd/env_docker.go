@@ -13,6 +13,12 @@ type EnvMgrDocker struct {
 	cnf *config.Docker
 }
 
+type DockerDiagnosis struct {
+	IsInstalled      bool
+	Version          string
+	MissingImageList []string
+}
+
 // Name implements IEnvMgr.
 func (e *EnvMgrDocker) GetName() string {
 	return "docker"
@@ -28,45 +34,38 @@ func NewEnvMgrDocker(ec *config.EnvConfig) *EnvMgrDocker {
 }
 
 // Check implements IEnvMgr.
-func (e *EnvMgrDocker) Check(c *config.SSHConfig) error {
+func (e *EnvMgrDocker) Check(c *config.SSHConfig) (any, error) {
 	if e.cnf == nil {
-		return nil
+		return nil, nil
 	}
 	se, err := tool.NewSSHExecutor(c)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = checkDocker(se, e.cnf)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return checkDocker(se, e.cnf)
 }
 
-func checkDocker(e *tool.SSHExecutor, dc *config.Docker) error {
+func checkDocker(e *tool.SSHExecutor, dc *config.Docker) (*DockerDiagnosis, error) {
+	res := new(DockerDiagnosis)
 	if dc != nil && dc.Enable {
-		fmt.Println("check docker ...")
-		output, err := e.ExecuteCommand("docker version --format 'docker: {{.Client.Version}}'")
+		output, err := e.ExecuteCommand("docker version --format '{{.Client.Version}}'")
 		if err != nil {
 			if err.Error() == "Process exited with status 127" {
-				fmt.Println("docker not install")
-				return nil
+				res.IsInstalled = false
+				return res, nil
 			} else {
-				fmt.Println("failed to check docker installment")
-				return err
+				return nil, fmt.Errorf("failed to check docker installment, err: %v", err)
 			}
 		}
-		fmt.Println(string(bytes.Trim(output, " \n")))
+		res.IsInstalled = true
+		res.Version = string(bytes.Trim(output, " \n"))
 
 		targetImageList := dc.ImageList
 		if len(targetImageList) != 0 {
-			fmt.Println("check docker images ...")
 			output, err = e.ExecuteCommand(`docker images --format "{{.Repository}}:{{.Tag}}"`)
 			if err != nil {
-				fmt.Println("failed to check docker images")
-				return err
+				return nil, fmt.Errorf("failed to check docker images, err: %v", err)
 			}
 			bsList := bytes.Split(bytes.Trim(output, " \n"), []byte("\n"))
 			imgTbl := make(map[string]struct{})
@@ -75,20 +74,14 @@ func checkDocker(e *tool.SSHExecutor, dc *config.Docker) error {
 				imgTbl[image] = struct{}{}
 			}
 
-			var missingImageList []string
 			for _, image := range targetImageList {
 				if _, has := imgTbl[image]; !has {
-					missingImageList = append(missingImageList, image)
+					res.MissingImageList = append(res.MissingImageList, image)
 				}
-			}
-			if len(missingImageList) == 0 {
-				fmt.Println("ok")
-			} else {
-				fmt.Println("missing images:", missingImageList)
 			}
 		}
 	}
-	return nil
+	return res, nil
 }
 
 // Deploy implements IEnvMgr.
@@ -96,48 +89,59 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 	if e.cnf == nil && !e.cnf.Enable {
 		return nil
 	}
-	fmt.Println("check docker ...")
 	se, err := tool.NewSSHExecutor(c)
 	if err != nil {
 		return err
 	}
 
+	fmt.Println("check docker ...")
 	// 1. check docker installment
-	output, err := se.ExecuteCommand("docker version --format 'docker: {{.Client.Version}}'")
+	res, err := e.Check(c)
 	if err != nil {
-		if err.Error() != "Process exited with status 127" {
-			fmt.Println("failed to check docker installment")
-			return err
-		} else {
-			// 1.1 try to install docker with net
-			log.Println("install docker with internet ...")
-			output, err = se.ExecuteCommand("curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun")
-			if err != nil {
-				return fmt.Errorf("failed to install docker with internet, err: %v", err)
-			}
-			result := string(bytes.Trim(output, " \n"))
-			if strings.Contains(result, "Server: Docker Engine - Community") {
-				log.Println("install docker with internet ok...")
-				return nil
-			}
-			// 1.2 try to install docker with deb
-			// 1.2.1 copy file demanded
-			err = tool.Copy(config.DOCKER_Deb_DIR, c.Alias+":ops")
-			if err != nil {
-				return err
-			}
-			// 1.2.2 run install script
-			output, err := se.ExecuteCommand("bash ./ops/docker_debs/install.sh")
-			if err != nil {
-				return err
-			}
-			fmt.Println(string(output))
-		}
-	} else {
-		fmt.Println(string(bytes.Trim(output, " \n")))
+		return fmt.Errorf("failed to check environment, err: %v", err)
 	}
-	// 2. check docker images
-	// 2.2 load missing images
+	if diagnosis, ok := res.(*DockerDiagnosis); !ok {
+		return fmt.Errorf("failed to convert res[%v] to docker diagnosis", res)
+	} else {
+		if diagnosis.IsInstalled && len(diagnosis.MissingImageList) == 0 {
+			return nil
+		} else {
+			// 1. copy docker environment files to target machine
+			err = tool.Copy(config.ENV_DOCKER_DIR, c.Alias+":ops")
+			if err != nil {
+				return err
+			}
+			// 2. deploy docker invironment
+			if !diagnosis.IsInstalled {
+				// 1.1 try to install docker with net
+				log.Println("install docker with internet ...")
+				output, err := se.ExecuteCommand("bash ./ops/docker/net/install.sh")
+				if err != nil {
+					return fmt.Errorf("failed to install docker with internet, err: %v", err)
+				}
+				result := string(bytes.Trim(output, " \n"))
+				if strings.Contains(result, "Server: Docker Engine - Community") {
+					log.Println("install docker with internet ok...")
+				} else {
+					// 1.2 try to install docker with deb
+					output, err = se.ExecuteCommand("bash ./ops/docker_debs/install.sh")
+					if err != nil {
+						return err
+					}
+					fmt.Println(string(output))
+				}
+			}
+			if !diagnosis.IsInstalled || len(diagnosis.MissingImageList) != 0 {
+				//  1.3 load images
+				log.Println("docker images loading ...")
+				output, err := se.ExecuteCommand("bash ./ops/docker/docker_images/load.sh")
+				if err != nil {
+					return err
+				}
+				fmt.Println(string(output))
+			}
+		}
+	}
 	return nil
 }
 

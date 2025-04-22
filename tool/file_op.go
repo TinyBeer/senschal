@@ -44,13 +44,13 @@ func Copy(srcPath, dstPath string) error {
 	if !srcIsDir {
 		log.Printf("copy %s to %s\n", srcPath, dstPath)
 		if !dstIsDir {
-			return cp(srcPath, dstPath)
+			return cpFile(srcPath, dstPath)
 		} else {
-			return cp(srcPath, filepath.Join(dstPath, filepath.Base(srcPath)))
+			return cpFile(srcPath, filepath.Join(dstPath, filepath.Base(srcPath)))
 		}
 	}
 	for _, child := range src.Children {
-		err := Copy(filepath.Join(child.BasePath, child.RelativePath, child.Name), filepath.Join(dstPath, filepath.Base(srcPath), child.RelativePath, child.Name))
+		err := copy(filepath.Join(child.BasePath, child.RelativePath, child.Name), filepath.Join(dstPath, filepath.Base(srcPath), child.RelativePath, child.Name))
 		if err != nil {
 			return err
 		}
@@ -58,7 +58,57 @@ func Copy(srcPath, dstPath string) error {
 	return nil
 }
 
-func cp(srcPath, dstPath string) error {
+func copy(srcPath, dstPath string) error {
+	src, err := newPath(srcPath)
+	if err != nil {
+		return err
+	}
+	err = src.syncStat()
+	if err != nil {
+		return err
+	}
+	dst, err := newPath(dstPath)
+	if err != nil {
+		return err
+	}
+	srcIsDir, err := src.IsDir()
+	if err != nil {
+		return err
+	}
+	exist, err := dst.IsExist()
+	if err != nil {
+		return err
+	}
+	dstIsDir := false
+	if !exist {
+		dstIsDir = srcIsDir
+	} else {
+		dstIsDir, err = dst.IsDir()
+		if err != nil {
+			return err
+		}
+	}
+	if srcIsDir && !dstIsDir {
+		return errors.New("can not copy a dir to a file")
+	}
+	if !srcIsDir {
+		log.Printf("copy %s to %s\n", srcPath, dstPath)
+		if !dstIsDir {
+			return cpFile(srcPath, dstPath)
+		} else {
+			return cpFile(srcPath, filepath.Join(dstPath, filepath.Base(srcPath)))
+		}
+	}
+	for _, child := range src.Children {
+		err := copy(filepath.Join(child.BasePath, child.RelativePath, child.Name), filepath.Join(dstPath, child.RelativePath, child.Name))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func cpFile(srcPath, dstPath string) error {
 	srcFile, err := NewFile(srcPath)
 	if err != nil {
 		return fmt.Errorf("failed to new source file with arg %v, err:%v", srcPath, err)

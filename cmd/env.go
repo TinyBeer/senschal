@@ -10,7 +10,7 @@ import (
 
 type IEnvMgr interface {
 	GetName() string
-	Check(c *config.SSHConfig) error
+	Check(c *config.SSHConfig) (any, error)
 	Deploy(c *config.SSHConfig) error
 }
 
@@ -95,9 +95,24 @@ var envCheckCmd = &cobra.Command{
 			c := m[alias]
 			for _, mgr := range envMgrList {
 				log.Printf("environment manager[%v] checking ...\n", mgr.GetName())
-				err := mgr.Check(c)
+				res, err := mgr.Check(c)
 				if err != nil {
 					log.Printf("check environment with config[%v] failed, err:%v\n", c, err)
+				} else {
+					if diagnosis, ok := res.(*DockerDiagnosis); ok {
+						if !diagnosis.IsInstalled {
+							fmt.Println("docker is not installed")
+						} else {
+							fmt.Printf("docker version: %s\n", diagnosis.Version)
+							if len(diagnosis.MissingImageList) != 0 {
+								fmt.Println("missing images: ", diagnosis.MissingImageList)
+							} else {
+								fmt.Println("all images is loaded")
+							}
+						}
+					} else {
+						log.Fatalf("failed to convert res[%v] to diagnosis", res)
+					}
 				}
 			}
 		}
