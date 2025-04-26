@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"path/filepath"
 	"seneschal/config"
 	"seneschal/tool"
 	"strings"
@@ -53,6 +54,7 @@ func checkDocker(e *tool.SSHExecutor, dc *config.Docker) (*DockerDiagnosis, erro
 		if err != nil {
 			if err.Error() == "Process exited with status 127" {
 				res.IsInstalled = false
+				res.MissingImageList = dc.ImageList
 				return res, nil
 			} else {
 				return nil, fmt.Errorf("failed to check docker installment, err: %v", err)
@@ -103,71 +105,77 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 	if diagnosis, ok := res.(*DockerDiagnosis); !ok {
 		return fmt.Errorf("failed to convert res[%v] to docker diagnosis", res)
 	} else {
-		if diagnosis.IsInstalled && len(diagnosis.MissingImageList) == 0 {
-			return nil
-		} else {
-			// 1. copy docker environment files to target machine
-			err = tool.Copy(config.ENV_DOCKER_DIR, c.Alias+":ops")
+		// 1. copy docker environment files to target machine
+		err = tool.Copy(config.ENV_DOCKER_DIR, c.Alias+":ops")
+		if err != nil {
+			return err
+		}
+		// 2. deploy docker invironment
+		if !diagnosis.IsInstalled {
+			// 1.1 try to install docker with net
+			log.Println("install docker with internet ...")
+			output, err := se.ExecuteCommand("curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun")
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to install docker with internet, err: %v", err)
 			}
-			// 2. deploy docker invironment
-			if !diagnosis.IsInstalled {
-				// 1.1 try to install docker with net
-				log.Println("install docker with internet ...")
-				output, err := se.ExecuteCommand("bash ./ops/docker/net/install.sh")
-				if err != nil {
-					return fmt.Errorf("failed to install docker with internet, err: %v", err)
-				}
-				result := string(bytes.Trim(output, " \n"))
-				if strings.Contains(result, "Server: Docker Engine - Community") {
-					log.Println("install docker with internet ok...")
-				} else {
-					// 1.2 try to install docker with deb
-					output, err = se.ExecuteCommand("bash ./ops/docker_debs/install.sh")
-					if err != nil {
-						return err
-					}
-					fmt.Println(string(output))
-				}
-
-				// user group docker
-				_, err = se.ExecuteCommand("getent group docker > /dev/null 2>&1")
-				if err != nil {
-					if err.Error() != "Process exited with status 2" {
-						return err
-					}
-					fmt.Println("missing docker group")
-					_, err = se.ExecuteCommand("sudo groupadd docker")
-					if err != nil {
-						return err
-					}
-
-				}
-
-				_, err = se.ExecuteCommand("id -Gn | grep docker")
-				if err != nil {
-					if err.Error() != "Process exited with status 1" {
-						return err
-					}
-					fmt.Println("user not in docker group")
-					_, err = se.ExecuteCommand("sudo usermod -aG docker $USER & newgrp docker")
-					if err != nil {
-						return err
-					}
-				}
-			}
-			if !diagnosis.IsInstalled || len(diagnosis.MissingImageList) != 0 {
-				//  1.3 load images
-				log.Println("docker images loading ...")
-				output, err := se.ExecuteCommand("bash ./ops/docker/docker_images/load.sh")
+			result := string(bytes.Trim(output, " \n"))
+			if strings.Contains(result, "Server: Docker Engine - Community") {
+				log.Println("install docker with internet ok...")
+			} else {
+				// 1.2 try to install docker with deb
+				output, err = se.ExecuteCommand("bash ./ops/docker/debs/install.sh")
 				if err != nil {
 					return err
 				}
 				fmt.Println(string(output))
 			}
+
+			// user group docker
+			_, err = se.ExecuteCommand("getent group docker > /dev/null 2>&1")
+			if err != nil {
+				if err.Error() != "Process exited with status 2" {
+					return err
+				}
+				fmt.Println("missing docker group")
+				_, err = se.ExecuteCommand("sudo groupadd docker")
+				if err != nil {
+					return err
+				}
+
+			}
+
+			_, err = se.ExecuteCommand("id -Gn | grep docker")
+			if err != nil {
+				if err.Error() != "Process exited with status 1" {
+					return err
+				}
+				fmt.Println("user not in docker group")
+				_, err = se.ExecuteCommand("sudo usermod -aG docker $USER & newgrp docker")
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		if len(diagnosis.MissingImageList) != 0 {
+			//  1.3 load images
+			log.Println("docker images loading ...")
+			for _, image := range diagnosis.MissingImageList {
+				imageTarName := strings.ReplaceAll(image, ":", "_") + ".tar"
+				err = tool.Copy(filepath.Join(config.DOCKER_IMAGE_DIR, imageTarName), c.Alias+":ops/docker_images/"+imageTarName)
+				if err != nil {
+					return err
+				}
+			}
+			output, err := se.ExecuteCommand("bash ./ops/docker/docker_images/load.sh")
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(output))
+
 		}
 	}
+
 	return nil
 }
 
