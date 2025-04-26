@@ -130,6 +130,32 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 					}
 					fmt.Println(string(output))
 				}
+
+				// user group docker
+				_, err = se.ExecuteCommand("getent group docker > /dev/null 2>&1")
+				if err != nil {
+					if err.Error() != "Process exited with status 2" {
+						return err
+					}
+					fmt.Println("missing docker group")
+					_, err = se.ExecuteCommand("sudo groupadd docker")
+					if err != nil {
+						return err
+					}
+
+				}
+
+				_, err = se.ExecuteCommand("id -Gn | grep docker")
+				if err != nil {
+					if err.Error() != "Process exited with status 1" {
+						return err
+					}
+					fmt.Println("user not in docker group")
+					_, err = se.ExecuteCommand("sudo usermod -aG docker $USER & newgrp docker")
+					if err != nil {
+						return err
+					}
+				}
 			}
 			if !diagnosis.IsInstalled || len(diagnosis.MissingImageList) != 0 {
 				//  1.3 load images
