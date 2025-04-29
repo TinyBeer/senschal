@@ -97,7 +97,7 @@ var envCheckCmd = &cobra.Command{
 				log.Printf("environment manager[%v] checking ...\n", mgr.GetName())
 				res, err := mgr.Check(c)
 				if err != nil {
-					log.Printf("check environment with config[%v] failed, err:%v\n", c, err)
+					log.Printf("check environment with config[%v] failed, err:%v\n", c.SSH, err)
 				} else {
 					if diagnosis, ok := res.(*DockerDiagnosis); ok {
 						if !diagnosis.IsInstalled {

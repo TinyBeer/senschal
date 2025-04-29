@@ -8,28 +8,29 @@ import (
 	"github.com/spf13/viper"
 )
 
+type SSHAuthMethod string
+
+const (
+	SSHAuthMethod_PW  SSHAuthMethod = "password"
+	SSHAuthMethod_KEY SSHAuthMethod = "key"
+)
+
 type SSHConfig struct {
 	Alias string `mapstructure:"alias"`
 	SSH   *SSH   `mapstructure:"ssh"`
 }
 type SSH struct {
-	User     string `mapstructure:"user"`
-	Password string `mapstructure:"password"`
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
+	User       string        `mapstructure:"user"`
+	Password   string        `mapstructure:"password"`
+	Host       string        `mapstructure:"host"`
+	Port       int           `mapstructure:"port"`
+	Method     SSHAuthMethod `mapstructure:"method"`
+	PrivateKey string        `mapstructure:"private_key"`
 }
 
 func NewSSHConfig() *SSHConfig {
-	config := &SSHConfig{
-		Alias: "",
-		SSH: &SSH{
-			User:     "",
-			Password: "",
-			Host:     "",
-			Port:     22,
-		},
-	}
-	return config
+	return new(SSHConfig)
+
 }
 
 func ListFilesWithExt(dir string, ext string) ([]string, error) {
@@ -65,6 +66,14 @@ func readSSHConfigFromToml(dir, name string) (*SSHConfig, error) {
 	err = v.Unmarshal(config)
 	if err != nil {
 		return nil, err
+	}
+	if config.SSH != nil {
+		if config.SSH.Method == "" {
+			config.SSH.Method = SSHAuthMethod_PW
+		}
+		if config.SSH.Port == 0 {
+			config.SSH.Port = 22
+		}
 	}
 
 	return config, nil

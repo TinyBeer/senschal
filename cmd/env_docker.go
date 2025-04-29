@@ -106,10 +106,6 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 		return fmt.Errorf("failed to convert res[%v] to docker diagnosis", res)
 	} else {
 		// 1. copy docker environment files to target machine
-		err = tool.Copy(config.ENV_DOCKER_DIR, c.Alias+":ops")
-		if err != nil {
-			return err
-		}
 		// 2. deploy docker invironment
 		if !diagnosis.IsInstalled {
 			// 1.1 try to install docker with net
@@ -123,7 +119,12 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 				log.Println("install docker with internet ok...")
 			} else {
 				// 1.2 try to install docker with deb
-				output, err = se.ExecuteCommand("bash ./ops/docker/debs/install.sh")
+				err = tool.Copy(config.DOCKER_DEB_DIR, c.Alias+":ops")
+				if err != nil {
+					return err
+				}
+
+				output, err = se.ExecuteCommand("bash ./ops/docker_deb/install.sh")
 				if err != nil {
 					return err
 				}
@@ -161,13 +162,17 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 			//  1.3 load images
 			log.Println("docker images loading ...")
 			for _, image := range diagnosis.MissingImageList {
-				imageTarName := strings.ReplaceAll(image, ":", "_") + ".tar"
-				err = tool.Copy(filepath.Join(config.DOCKER_IMAGE_DIR, imageTarName), c.Alias+":ops/docker_images/"+imageTarName)
+				imageTarName := strings.ReplaceAll(strings.ReplaceAll(image, ":", "_"), "/", "+") + ".tar"
+				err = tool.Copy(filepath.Join(config.DOCKER_IMAGE_DIR, imageTarName), c.Alias+":ops/docker_image/"+imageTarName)
 				if err != nil {
 					return err
 				}
 			}
-			output, err := se.ExecuteCommand("bash ./ops/docker/docker_images/load.sh")
+			err = tool.Copy(filepath.Join(config.DOCKER_IMAGE_DIR, "load.sh"), c.Alias+":ops/docker_image/load.sh")
+			if err != nil {
+				return err
+			}
+			output, err := se.ExecuteCommand("bash ./ops/docker_image/load.sh")
 			if err != nil {
 				return err
 			}

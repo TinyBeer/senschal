@@ -16,7 +16,7 @@ func GetEnvConfig() (*EnvConfig, error) {
 }
 func getEnvConfig(dir string) (*EnvConfig, error) {
 	v := viper.New()
-	v.SetConfigName(ENV_CFG_Name)
+	v.SetConfigName("env")
 	v.SetConfigType(Ext_TOML)
 	v.AddConfigPath(dir)
 

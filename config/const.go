@@ -1,14 +1,25 @@
 package config
 
+import "path/filepath"
+
 const (
 	Ext_TOML = "toml"
+
+	Def_Data_Dir          = "data"
+	Conf_Dir_Name         = "conf"
+	Env_Conf_Dir_Name     = "env"
+	Docker_Image_Dir_Name = "docker_image"
+	Docker_Deb_Dir_Name   = "docker_deb"
+	SSH_Conf_Dir_Name     = "ssh"
+	SSH_Key_Dir_Name      = "ssh_key"
 )
 
 var (
-	CFG_ROOT         = "./conf"
-	ENV_CFG_DIR      = CFG_ROOT + "/env"
-	ENV_DOCKER_DIR   = ENV_CFG_DIR + "/docker"
-	DOCKER_IMAGE_DIR = "./tmp/docker_images"
-	ENV_CFG_Name     = "env"
-	SSH_CFG_DIR      = CFG_ROOT + "/ssh"
+	CFG_DIR     = filepath.Join(Def_Data_Dir, Conf_Dir_Name)
+	ENV_CFG_DIR = filepath.Join(CFG_DIR, Env_Conf_Dir_Name)
+
+	DOCKER_DEB_DIR   = filepath.Join(Def_Data_Dir, Docker_Deb_Dir_Name)
+	DOCKER_IMAGE_DIR = filepath.Join(Def_Data_Dir, Docker_Image_Dir_Name)
+	SSH_CFG_DIR      = filepath.Join(CFG_DIR, SSH_Conf_Dir_Name)
+	SSH_KEY_DIR      = filepath.Join(SSH_CFG_DIR, SSH_Key_Dir_Name)
 )

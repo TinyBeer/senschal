@@ -3,7 +3,9 @@ package tool
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
+	"path/filepath"
 	"seneschal/config"
 
 	"golang.org/x/crypto/ssh"
@@ -29,14 +31,30 @@ func (e *SSHExecutor) getClient() (*ssh.Client, error) {
 	password := e.cfg.SSH.Password
 	host := e.cfg.SSH.Host
 	port := e.cfg.SSH.Port
-	config := &ssh.ClientConfig{
-		User: user,
-		Auth: []ssh.AuthMethod{
-			ssh.Password(password),
-		},
+	cC := &ssh.ClientConfig{
+		User:            user,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", host, port), config)
+	switch e.cfg.SSH.Method {
+	case config.SSHAuthMethod_PW:
+		cC.Auth = append(cC.Auth, ssh.Password(password))
+	case config.SSHAuthMethod_KEY:
+		// 读取私钥文件
+		privateKey, err := os.ReadFile(filepath.Join(config.SSH_KEY_DIR, e.cfg.SSH.PrivateKey))
+		if err != nil {
+			log.Fatalf("Failed to read private key: %v", err)
+		}
+
+		// 解析私钥
+		signer, err := ssh.ParsePrivateKey(privateKey)
+		if err != nil {
+			log.Fatalf("Failed to parse private key: %v", err)
+		}
+		cC.Auth = append(cC.Auth, ssh.PublicKeys(signer))
+	default:
+		return nil, fmt.Errorf("unsupported methd: %v", e.cfg.SSH.Method)
+	}
+	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", host, port), cC)
 	if err != nil {
 		return nil, err
 	}
