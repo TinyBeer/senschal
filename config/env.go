@@ -1,14 +1,35 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/spf13/viper"
+)
+
+type Image string
+
+func (img Image) Name() string {
+	return strings.ReplaceAll(strings.ReplaceAll(string(img), ":", "_"), "/", "-") + ".tar"
+}
+
+func (img Image) LocalFilePath() string {
+	return filepath.Join(DOCKER_IMAGE_DIR, img.Name())
+}
+
+func (img Image) LocalFileExist() bool {
+	_, err := os.Stat(img.LocalFilePath())
+	return !os.IsNotExist(err)
+}
 
 type EnvConfig struct {
 	Docker *Docker `mapstructure:"docker"`
 }
 
 type Docker struct {
-	Enable    bool     `mapstructure:"enable"`
-	ImageList []string `mapstructure:"image_list"`
+	Enable    bool    `mapstructure:"enable"`
+	ImageList []Image `mapstructure:"image_list"`
 }
 
 func GetEnvConfig() (*EnvConfig, error) {

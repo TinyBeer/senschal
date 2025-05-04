@@ -17,7 +17,7 @@ type EnvMgrDocker struct {
 type DockerDiagnosis struct {
 	IsInstalled      bool
 	Version          string
-	MissingImageList []string
+	MissingImageList []config.Image
 }
 
 // Name implements IEnvMgr.
@@ -77,7 +77,7 @@ func checkDocker(e *tool.SSHExecutor, dc *config.Docker) (*DockerDiagnosis, erro
 			}
 
 			for _, image := range targetImageList {
-				if _, has := imgTbl[image]; !has {
+				if _, has := imgTbl[string(image)]; !has {
 					res.MissingImageList = append(res.MissingImageList, image)
 				}
 			}
@@ -162,8 +162,19 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 			//  1.3 load images
 			log.Println("docker images loading ...")
 			for _, image := range diagnosis.MissingImageList {
-				imageTarName := strings.ReplaceAll(strings.ReplaceAll(image, ":", "_"), "/", "+") + ".tar"
-				err = tool.Copy(filepath.Join(config.DOCKER_IMAGE_DIR, imageTarName), c.Alias+":ops/docker_image/"+imageTarName)
+				if !image.LocalFileExist() {
+					bs, err := tool.ExecuteCommand(fmt.Sprintf("docker pull %s", string(image)))
+					if err != nil {
+						return err
+					}
+					fmt.Println(string(bs))
+					bs, err = tool.ExecuteCommand(fmt.Sprintf("docker save -o %s %s", image.LocalFilePath(), string(image)))
+					if err != nil {
+						return err
+					}
+					fmt.Println(string(bs))
+				}
+				err = tool.Copy(image.LocalFilePath(), c.Alias+":ops/docker_image/"+image.Name())
 				if err != nil {
 					return err
 				}
