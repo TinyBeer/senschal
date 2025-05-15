@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"seneschal/config"
+	"seneschal/tool"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -16,18 +17,6 @@ type IEnvMgr interface {
 }
 
 func init() {
-	// ecm, err := config.GetEnvConfigMap()
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// for _, ec := range ecm {
-	// 	if ec.Default {
-	// 		if ec.Docker != nil {
-	// 			envMgrList = append(envMgrList, NewEnvMgrDocker(ec))
-	// 		}
-	// 	}
-	// }
-
 	envCmd.AddCommand(envCheckCmd)
 	envCmd.AddCommand(envDeployCmd)
 	rootCmd.AddCommand(envCmd)
@@ -130,24 +119,26 @@ var envCheckCmd = &cobra.Command{
 			return
 		}
 
+		var data [][]string
+		data = append(data, []string{"alias", "result"})
 		for _, alias := range sshAliasList {
-			log.Printf("environment[%v] check machine[%v] start ...\n", envAlias, alias)
+			// log.Printf("environment[%v] check machine[%v] start ...\n", envAlias, alias)
 			c := scm[alias]
+			var result string
 			for _, mgr := range envMgrList {
-				log.Printf("environment manager[%v] checking ...\n", mgr.GetName())
+				// log.Printf("environment manager[%v] checking ...\n", mgr.GetName())
 				res, err := mgr.Check(c)
 				if err != nil {
-					log.Printf("check environment with config[%v] failed, err:%v\n", c.SSH, err)
+					result = fmt.Sprintf("check environment with config[%v] failed, err:%v\n", c.SSH, err)
 				} else {
 					if diagnosis, ok := res.(*DockerDiagnosis); ok {
 						if !diagnosis.IsInstalled {
-							fmt.Println("docker is not installed")
+							result = "docker is not installed"
 						} else {
-							fmt.Printf("docker version: %s\n", diagnosis.Version)
 							if len(diagnosis.MissingImageList) != 0 {
-								fmt.Println("missing images: ", diagnosis.MissingImageList)
+								result = fmt.Sprintf("missing images: %v", diagnosis.MissingImageList)
 							} else {
-								fmt.Println("all images is loaded")
+								result = "ok"
 							}
 						}
 					} else {
@@ -156,8 +147,9 @@ var envCheckCmd = &cobra.Command{
 					}
 				}
 			}
+			data = append(data, []string{alias, result})
 		}
-
+		tool.ShowTable(data)
 	},
 }
 
@@ -171,16 +163,19 @@ var envCmd = &cobra.Command{
 			fmt.Println(err)
 			return
 		}
-		fmt.Printf("别名\t摘要\n")
+
+		var data [][]string
+		data = append(data, []string{"alias", "abstract"})
 		for alias, ec := range ecm {
-			var abstract string
+			abstract := "null"
 			if ec.Docker != nil && ec.Docker.Enable {
 				abstract = "docker enable"
 				if len(ec.Docker.ImageList) != 0 {
 					abstract = fmt.Sprintf("docker with images: %v", ec.Docker.ImageList)
 				}
 			}
-			fmt.Printf("%s\t%s\n", alias, abstract)
+			data = append(data, []string{alias, abstract})
 		}
+		tool.ShowTable(data)
 	},
 }

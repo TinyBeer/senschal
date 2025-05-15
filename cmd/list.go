@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"seneschal/config"
+	"seneschal/tool"
 
 	"github.com/spf13/cobra"
 )
@@ -21,10 +22,12 @@ var listCmd = &cobra.Command{
 			fmt.Println("没有找到可用的配置")
 			return
 		}
-		fmt.Printf("别名\t主机\n")
+		var data [][]string
+		data = append(data, []string{"alias", "host"})
 		for k, v := range m {
-			fmt.Printf("%s\t%s\n", k, v.SSH.Host)
+			data = append(data, []string{k, v.SSH.Host})
 		}
+		tool.ShowTable(data)
 	},
 }
 
