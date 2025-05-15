@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,6 +25,8 @@ func (img Image) LocalFileExist() bool {
 }
 
 type EnvConfig struct {
+	Alias string `mapstructure:"alias"`
+	// Default bool    `mapstructure:"default"`
 	Docker *Docker `mapstructure:"docker"`
 }
 
@@ -32,12 +35,33 @@ type Docker struct {
 	ImageList []Image `mapstructure:"image_list"`
 }
 
-func GetEnvConfig() (*EnvConfig, error) {
-	return getEnvConfig(ENV_CFG_DIR)
-}
-func getEnvConfig(dir string) (*EnvConfig, error) {
+// func GetEnvConfig() (*EnvConfig, error) {
+// 	return getEnvConfig(ENV_CFG_DIR)
+// }
+// func getEnvConfig(dir string) (*EnvConfig, error) {
+// 	v := viper.New()
+// 	v.SetConfigName("env")
+// 	v.SetConfigType(Ext_TOML)
+// 	v.AddConfigPath(dir)
+
+// 	// 读取配置文件
+// 	err := v.ReadInConfig()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	config := new(EnvConfig)
+// 	err = v.Unmarshal(config)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return config, nil
+// }
+
+func readEnvConfigFromToml(dir, name string) (*EnvConfig, error) {
 	v := viper.New()
-	v.SetConfigName("env")
+	v.SetConfigName(name)
 	v.SetConfigType(Ext_TOML)
 	v.AddConfigPath(dir)
 
@@ -52,6 +76,32 @@ func getEnvConfig(dir string) (*EnvConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return config, nil
+}
+
+func GetEnvConfigMap() (map[string]*EnvConfig, error) {
+	return getEnvConfigMap(ENV_CFG_DIR)
+}
+
+func getEnvConfigMap(dir string) (map[string]*EnvConfig, error) {
+	m := make(map[string]*EnvConfig)
+	fileNames, err := ListFilesWithExt(dir, Ext_TOML)
+	if err != nil {
+		return nil, err
+	}
+	for _, name := range fileNames {
+		c, err := readEnvConfigFromToml(dir, name)
+		if err != nil {
+			return nil, err
+		}
+		alias := name
+		if c.Alias != "" {
+			alias = c.Alias
+		}
+		if _, has := m[alias]; has {
+			return nil, fmt.Errorf("duplicated env alias[%s]", alias)
+		}
+		m[alias] = c
+	}
+	return m, nil
 }
