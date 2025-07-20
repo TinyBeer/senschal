@@ -12,6 +12,7 @@ const (
 	Docker_Deb_Dir_Name   = "docker_deb"
 	SSH_Conf_Dir_Name     = "ssh"
 	SSH_Key_Dir_Name      = "ssh_key"
+	Workout_Dir_Name      = "workout"
 )
 
 var (
@@ -22,4 +23,5 @@ var (
 	DOCKER_IMAGE_DIR = filepath.Join(Def_Data_Dir, Docker_Image_Dir_Name)
 	SSH_CFG_DIR      = filepath.Join(CFG_DIR, SSH_Conf_Dir_Name)
 	SSH_KEY_DIR      = filepath.Join(SSH_CFG_DIR, SSH_Key_Dir_Name)
+	Workout_Dir      = filepath.Join(CFG_DIR, Workout_Dir_Name)
 )

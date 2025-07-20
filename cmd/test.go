@@ -1,9 +1,10 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"seneschal/config"
-	"seneschal/tool"
 
 	"github.com/spf13/cobra"
 )
@@ -13,25 +14,14 @@ var testCmd = &cobra.Command{
 	Short: "测试",
 	Long:  "开发阶段用于测试命令",
 	Run: func(cmd *cobra.Command, args []string) {
-		img := config.Image("mysql:5.7")
-		fmt.Println(img.Name())
-		fmt.Println(img.LocalFileExist())
-		fmt.Println(img.LocalFilePath())
-		if !img.LocalFileExist() {
-			bs, err := tool.ExecuteCommand(fmt.Sprintf("docker pull %s", string(img)))
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			fmt.Println(string(bs))
-			bs, err = tool.ExecuteCommand(fmt.Sprintf("docker save -o %s %s", img.LocalFilePath(), string(img)))
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			fmt.Println(string(bs))
+		wcm, err := config.GetWorkoutConfigMap(config.Workout_Dir)
+		if err != nil {
+			log.Fatal(err)
 		}
-
+		for name, conf := range wcm {
+			bs, _ := json.Marshal(conf)
+			fmt.Printf("name: %s conf: %v\n", name, string(bs))
+		}
 	}}
 
 func init() {
