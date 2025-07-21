@@ -93,7 +93,28 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// These keys should exit the program.
 		case "ctrl+c", "q":
 			return m, tea.Quit
-		case "enter", " ":
+		case "enter":
+			if m.curItem != nil && m.curItem.Type == config.WorkoutType_Count && !m.breaking {
+				if m.curItem.Break == 0 {
+					m.curRepeat++
+					if m.curRepeat == m.curItem.Repeat {
+						m.curItemIdx++
+						m.curRepeat = 0
+						if m.curItemIdx == len(m.wc.ItemList) {
+							m.status = WorkoutStatus_Fin
+							m.curItem = nil
+						} else {
+							m.breaking = false
+							m.curItem = m.wc.ItemList[m.curItemIdx]
+							m.countDown = m.curItem.Target
+						}
+					}
+				} else {
+					m.breaking = true
+					m.countDown = m.curItem.Break
+				}
+			}
+		case " ":
 			switch m.status {
 			case WorkoutStatus_Break:
 				m.status = WorkoutStatus_Work
@@ -106,6 +127,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.status != WorkoutStatus_Work {
 			return m, tick()
 		}
+		if m.curItem == nil || (m.curItem.Type == config.WorkoutType_Count && !m.breaking) {
+			return m, tick()
+		}
 		m.countDown--
 		if m.breaking {
 			if m.countDown == 0 {
@@ -116,6 +140,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.curItemIdx++
 					if m.curItemIdx == len(m.wc.ItemList) {
 						m.status = WorkoutStatus_Fin
+						m.curItem = nil
 					} else {
 						m.curItem = m.wc.ItemList[m.curItemIdx]
 						m.countDown = m.curItem.Target
@@ -133,6 +158,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.curItemIdx++
 						if m.curItemIdx == len(m.wc.ItemList) {
 							m.status = WorkoutStatus_Fin
+							m.curItem = nil
 						} else {
 							m.curItem = m.wc.ItemList[m.curItemIdx]
 						}
