@@ -43,6 +43,7 @@ var (
 
 type tickMsg time.Time
 
+//go:generate stringer -type=WorkoutStatus
 type WorkoutStatus int
 
 const (
