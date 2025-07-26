@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"seneschal/config"
+	"seneschal/ui/component"
 	"strings"
 	"time"
 
@@ -35,10 +36,11 @@ import (
 // ANSIBrightWhite
 
 var (
-	todoStyle   = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(termenv.ANSIYellow))
-	finishStyle = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(termenv.ANSIGreen))
-	breakStyle  = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(termenv.ANSIBrightGreen))
-	workStyle   = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(termenv.ANSIMagenta))
+	selectedWorkConfigStyle = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(termenv.ANSIYellow)).Background(lipgloss.ANSIColor(termenv.ANSIBrightBlue))
+	todoStyle               = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(termenv.ANSIYellow))
+	finishStyle             = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(termenv.ANSIGreen))
+	breakStyle              = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(termenv.ANSIBrightGreen))
+	workStyle               = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(termenv.ANSIMagenta))
 )
 
 type tickMsg time.Time
@@ -47,12 +49,13 @@ type tickMsg time.Time
 type WorkoutStatus int
 
 const (
-	WorkoutStatus_Break WorkoutStatus = iota
-	WorkoutStatus_Work
-	WorkoutStatus_Fin
+	Breaking WorkoutStatus = iota
+	Working
+	Fin
 )
 
 type model struct {
+	wcList     []*config.WorkoutConfig
 	wc         *config.WorkoutConfig
 	status     WorkoutStatus
 	curItem    *config.WorkoutItem
@@ -60,20 +63,22 @@ type model struct {
 	breaking   bool
 	countDown  int
 	curRepeat  int
+	frame      int
 }
 
-func initialModel(wc *config.WorkoutConfig) model {
+func initialModel(wcList []*config.WorkoutConfig, wc *config.WorkoutConfig) model {
 	m := model{
+		wcList:     wcList,
 		wc:         wc,
-		status:     WorkoutStatus_Break,
-		curItem:    &config.WorkoutItem{},
+		status:     Breaking,
+		curItem:    nil,
 		curItemIdx: 0,
 		breaking:   false,
 		countDown:  0,
 		curRepeat:  0,
 	}
-	if len(wc.ItemList) == 0 {
-		m.status = WorkoutStatus_Fin
+	if wc == nil || len(wc.ItemList) == 0 {
+		m.status = Fin
 	} else {
 		m.curItem = m.wc.ItemList[m.curItemIdx]
 		m.countDown = m.curItem.Target
@@ -102,7 +107,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.curItemIdx++
 						m.curRepeat = 0
 						if m.curItemIdx == len(m.wc.ItemList) {
-							m.status = WorkoutStatus_Fin
+							m.status = Fin
 							m.curItem = nil
 						} else {
 							m.breaking = false
@@ -117,15 +122,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case " ":
 			switch m.status {
-			case WorkoutStatus_Break:
-				m.status = WorkoutStatus_Work
-			case WorkoutStatus_Work:
-				m.status = WorkoutStatus_Break
-			case WorkoutStatus_Fin:
+			case Breaking:
+				m.status = Working
+			case Working:
+				m.status = Breaking
+			case Fin:
 			}
 		}
 	case tickMsg:
-		if m.status != WorkoutStatus_Work {
+		m.frame++
+		if m.status != Working {
 			return m, tick()
 		}
 		if m.curItem == nil || (m.curItem.Type == config.WorkoutType_Count && !m.breaking) {
@@ -140,7 +146,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.curRepeat = 0
 					m.curItemIdx++
 					if m.curItemIdx == len(m.wc.ItemList) {
-						m.status = WorkoutStatus_Fin
+						m.status = Fin
 						m.curItem = nil
 					} else {
 						m.curItem = m.wc.ItemList[m.curItemIdx]
@@ -158,7 +164,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if m.curRepeat == m.curItem.Repeat {
 						m.curItemIdx++
 						if m.curItemIdx == len(m.wc.ItemList) {
-							m.status = WorkoutStatus_Fin
+							m.status = Fin
 							m.curItem = nil
 						} else {
 							m.curItem = m.wc.ItemList[m.curItemIdx]
@@ -181,50 +187,77 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	s := ""
-	if m.status == WorkoutStatus_Fin {
+	if m.status == Fin {
 		f := figure.NewFigure("FIN", "", true)
 		s += finishStyle.Render(f.String()) + "\n\n"
 	} else if m.curItem != nil {
-		f := figure.NewFigure(fmt.Sprintf("%3d", m.countDown), "", true)
-		s += todoStyle.Render(m.curItem.Name) + "\t"
+		s += component.StyleActiveItem.Render(m.curItem.Name) + "\t"
 		if m.breaking {
-			s += "breaking\n"
-			s += breakStyle.Render(f.String())
+			f := figure.NewFigure(fmt.Sprintf("%3d -- %3d", m.curItem.Break, m.countDown), "", true)
+			s += breakStyle.Render("breaking\n" + f.String())
 		} else {
-			s += "working\n"
-			s += workStyle.Render(f.String())
+			f := figure.NewFigure(fmt.Sprintf("%3d -- %3d", m.curItem.Target, m.countDown), "", true)
+			s += workStyle.Render("working\n" + f.String())
 		}
 		s += "\n\n"
 	}
-	s += m.itemListView() + "\n\n"
-	return s
+
+	return s + m.workoutListInfo()
 }
 
-func (m *model) itemListView() string {
-	var viewLineList []string
-	completed := true
-	for idx, item := range m.wc.ItemList {
-		if idx == m.curItemIdx {
-			completed = false
+func (m model) workoutListInfo() string {
+	workoutContainer := component.NewBox(component.Direction_V)
+	for _, wc := range m.wcList {
+		if wc == m.wc {
+			workoutContainer.AddSub(component.NewInlineTextWithStyle(10, "->"+wc.Name, component.StyleSelectedWorkConfig))
+		} else {
+			workoutContainer.AddSub(component.NewInlineText(10, wc.Name))
 		}
-		viewLineList = append(viewLineList, m.itemView(item, completed, m.curRepeat))
-	}
-	return strings.Join(viewLineList, "\n")
 
+	}
+
+	itemContainre := component.NewBox(component.Direction_V)
+	if m.wc != nil {
+		for idx, item := range m.wc.ItemList {
+			itemInfo := component.NewBox(component.Direction_H)
+			var style lipgloss.Style
+			var repeatInfo string
+			switch {
+			case m.curItemIdx > idx:
+				style = component.StyleCompletedItem
+				repeatInfo = fmt.Sprintf("%d/%d", item.Repeat, item.Repeat)
+			case m.curItemIdx == idx:
+				style = component.StyleActiveItem
+				repeatInfo = fmt.Sprintf("%d/%d", m.curRepeat, item.Repeat)
+			default:
+				repeatInfo = fmt.Sprintf("%d/%d", 0, item.Repeat)
+			}
+
+			var targetInfo string
+			switch item.Type {
+			case config.WorkoutType_Count:
+				targetInfo = fmt.Sprintf("count: %d", item.Target)
+			case config.WorkoutType_Duration:
+				targetInfo = fmt.Sprintf("duration: %ds", item.Target)
+			}
+
+			itemInfo.AddSub(component.NewInlineTextWithStyle(20, item.Name, style))
+			itemInfo.AddSub(component.NewInlineTextWithStyle(20, targetInfo, style))
+			itemInfo.AddSub(component.NewInlineTextWithStyle(20, "repeat: "+repeatInfo, style))
+			itemContainre.AddSub(itemInfo)
+		}
+
+	}
+
+	v := component.NewBox(component.Direction_H)
+	v.AddSub(workoutContainer)
+	v.AddSub(itemContainre)
+
+	return strings.Join(v.GetCurrentContent(m.frame), "\n")
 }
 
-func (m *model) itemView(item *config.WorkoutItem, completed bool, repeate int) string {
-	style := todoStyle
-	if completed {
-		repeate = item.Repeat
-		style = finishStyle
-	}
-	return style.Render(fmt.Sprintf("%v: duartion: %ds break: %ds repeat: %d/%d",
-		item.Name, item.Target, item.Break, repeate, item.Repeat))
-}
-
-func RunWithWorkoutConfig(wc *config.WorkoutConfig) {
-	p := tea.NewProgram(initialModel(wc))
+func Workout(wcList []*config.WorkoutConfig, wc *config.WorkoutConfig) {
+	p := tea.NewProgram(initialModel(wcList, wc))
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)

@@ -6,6 +6,7 @@ import (
 	"seneschal/config"
 	"seneschal/tool"
 	"seneschal/ui/terminal"
+	"sort"
 
 	"github.com/spf13/cobra"
 )
@@ -22,6 +23,15 @@ workout workout_name: run workout
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		wcList := make([]*config.WorkoutConfig, 0, len(wcm))
+		for _, wc := range wcm {
+			wcList = append(wcList, wc)
+		}
+		sort.Slice(wcList, func(i, j int) bool {
+			return wcList[i].Name < wcList[j].Name
+		})
+
 		list, err := cmd.Flags().GetBool("list")
 		if err != nil {
 			log.Fatal(err)
@@ -29,25 +39,23 @@ workout workout_name: run workout
 		if list {
 			var data [][]string
 			data = append(data, []string{"name"})
-			for name, wc := range wcm {
-				data = append(data, []string{name})
-				_ = wc
+			for _, wc := range wcList {
+				data = append(data, []string{wc.Name})
 			}
 			tool.ShowTable(data)
 			return
-		} else {
-			if len(args) != 1 {
-				log.Fatal("Please enter a workout name!")
+		}
+		var wc *config.WorkoutConfig
+		var has bool
+		if len(args) == 1 {
+			workoutName := args[0]
+			if wc, has = wcm[workoutName]; !has {
+				fmt.Println("Please enter a correct workout name!")
+				return
 			}
-			fmt.Println(args)
 		}
 
-		workoutName := args[0]
-		if wc, has := wcm[workoutName]; !has {
-			fmt.Println("Please enter a correct workout name!")
-		} else {
-			terminal.RunWithWorkoutConfig(wc)
-		}
+		terminal.Workout(wcList, wc)
 	}}
 
 func init() {
