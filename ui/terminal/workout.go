@@ -100,7 +100,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "enter":
-			if m.curItem != nil && m.curItem.Type == config.WorkoutType_Count && !m.breaking {
+			if m.curItem != nil && m.curItem.Type == config.Count && !m.breaking {
 				if m.curItem.Break == 0 {
 					m.curRepeat++
 					if m.curRepeat == m.curItem.Repeat {
@@ -134,7 +134,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.status != Working {
 			return m, tick()
 		}
-		if m.curItem == nil || (m.curItem.Type == config.WorkoutType_Count && !m.breaking) {
+		if m.curItem == nil || (m.curItem.Type == config.Count && !m.breaking) {
 			return m, tick()
 		}
 		m.countDown--
@@ -235,15 +235,15 @@ func (m model) workoutListInfo() string {
 
 			var targetInfo string
 			switch item.Type {
-			case config.WorkoutType_Count:
-				targetInfo = fmt.Sprintf("count: %d", item.Target)
-			case config.WorkoutType_Duration:
-				targetInfo = fmt.Sprintf("duration: %ds", item.Target)
+			case config.Count:
+				targetInfo = fmt.Sprintf("%s: %d", item.Type.String(), item.Target)
+			case config.Duration:
+				targetInfo = fmt.Sprintf("%s: %ds", item.Type.String(), item.Target)
 			}
 
 			itemInfo.AddSub(component.NewInlineTextWithStyle(20, item.Name, style))
 			itemInfo.AddSub(component.NewInlineTextWithStyle(20, targetInfo, style))
-			itemInfo.AddSub(component.NewInlineTextWithStyle(20, "repeat: "+repeatInfo, style))
+			itemInfo.AddSub(component.NewInlineTextWithStyle(20, "Repeat: "+repeatInfo, style))
 			itemContainre.AddSub(itemInfo)
 		}
 

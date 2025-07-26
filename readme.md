@@ -2,6 +2,7 @@
 用于快速将云服务器改造为工作模板环境。
 # TODO
 ## 交互方式
+* [ ] manager workout config by csv file
 * [ ] integrate image handler
 * [ ] workout 
 * [ ] 终端UI
@@ -25,4 +26,3 @@
 
 ## 输出美化
 * [x] 美化输出 使用表格输出列表内容
-

@@ -4,12 +4,14 @@ import (
 	"github.com/spf13/viper"
 )
 
-type WorkoutType string
+const DefaultBreak = 10
+
+//go:generate stringer --type=WorkoutType
+type WorkoutType int
 
 const (
-	DefaultBreak         = 10
-	WorkoutType_Duration = "duration"
-	WorkoutType_Count    = "count"
+	Duration WorkoutType = iota + 1
+	Count
 )
 
 type WorkoutConfig struct {
