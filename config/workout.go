@@ -1,17 +1,20 @@
 package config
 
 import (
-	"github.com/spf13/viper"
+	"os"
+	"path/filepath"
+
+	"github.com/gocarina/gocsv"
 )
 
 const DefaultBreak = 10
 
-//go:generate stringer --type=WorkoutType
+//go:generate stringer --type=WorkoutType -linecomment
 type WorkoutType int
 
 const (
-	Duration WorkoutType = iota + 1
-	Count
+	WorkoutType_Duration WorkoutType = iota + 1 // duration
+	WorkoutType_Count                           // count
 )
 
 type WorkoutConfig struct {
@@ -20,11 +23,11 @@ type WorkoutConfig struct {
 }
 
 type WorkoutItem struct {
-	Name   string      `mapstructure:"name"`
-	Type   WorkoutType `mapstructure:"type"`
-	Repeat int         `mapstructure:"repeat"`
-	Target int         `mapstructure:"target"`
-	Break  int         `mapstructure:"break"`
+	Name   string      `mapstructure:"name" csv:"name"`
+	Type   WorkoutType `mapstructure:"type" csv:"type"`
+	Repeat int         `mapstructure:"repeat" csv:"repeat"`
+	Target int         `mapstructure:"target" csv:"target"`
+	Break  int         `mapstructure:"break" csv:"break"`
 }
 
 func NewWorkoutConfig() *WorkoutConfig {
@@ -33,13 +36,13 @@ func NewWorkoutConfig() *WorkoutConfig {
 }
 
 func GetWorkoutConfigMap(dir string) (map[string]*WorkoutConfig, error) {
-	fileNameList, err := ListFilesWithExt(dir, Ext_TOML)
+	fileNameList, err := ListFilesWithExt(dir, Ext_CSV)
 	if err != nil {
 		return nil, err
 	}
 	cm := make(map[string]*WorkoutConfig)
 	for _, fileName := range fileNameList {
-		wc, err := readWorkoutConfigFromToml(dir, fileName)
+		wc, err := readWorkoutConfigFromCsv(dir, fileName)
 		if err != nil {
 			return nil, err
 		}
@@ -48,28 +51,55 @@ func GetWorkoutConfigMap(dir string) (map[string]*WorkoutConfig, error) {
 	return cm, nil
 }
 
-func readWorkoutConfigFromToml(dir, name string) (*WorkoutConfig, error) {
-	v := viper.New()
-	v.SetConfigName(name)
-	v.SetConfigType(Ext_TOML)
-	v.AddConfigPath(dir)
+// func readWorkoutConfigFromToml(dir, name string) (*WorkoutConfig, error) {
+// 	v := viper.New()
+// 	v.SetConfigName(name)
+// 	v.SetConfigType(Ext_TOML)
+// 	v.AddConfigPath(dir)
 
-	// 读取配置文件
-	err := v.ReadInConfig()
+// 	// 读取配置文件
+// 	err := v.ReadInConfig()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	config := NewWorkoutConfig()
+// 	err = v.Unmarshal(config)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	for _, v := range config.ItemList {
+// 		if v.Repeat == 0 {
+// 			v.Repeat = 1
+// 		}
+// 	}
+
+// 	return config, nil
+// }
+
+func readWorkoutConfigFromCsv(dir, name string) (*WorkoutConfig, error) {
+	fileName := filepath.Join(dir, name+"."+Ext_CSV)
+	// 打开 CSV 文件
+	file, err := os.OpenFile(fileName, os.O_RDONLY, os.ModePerm)
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 
-	config := NewWorkoutConfig()
-	err = v.Unmarshal(config)
-	if err != nil {
+	// 解析 CSV 到结构体切片
+	var itemList []*WorkoutItem
+	if err := gocsv.UnmarshalFile(file, &itemList); err != nil {
 		return nil, err
 	}
-	for _, v := range config.ItemList {
+
+	for _, v := range itemList {
 		if v.Repeat == 0 {
 			v.Repeat = 1
 		}
 	}
 
-	return config, nil
+	return &WorkoutConfig{
+		Name:     name,
+		ItemList: itemList,
+	}, nil
 }

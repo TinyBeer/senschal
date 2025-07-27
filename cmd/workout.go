@@ -3,17 +3,45 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"seneschal/config"
 	"seneschal/tool"
 	"seneschal/ui/terminal"
 	"sort"
 
+	"github.com/gocarina/gocsv"
 	"github.com/spf13/cobra"
 )
 
+var newWorkoutCmd = &cobra.Command{
+	Use:   "new <workout_name>",
+	Short: "creat a new workout",
+	Long:  `generate a new workout config file at workout config dir`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) != 1 {
+			fmt.Println("Please enter a workout name!")
+			return
+		}
+		workoutName := args[0]
+		// 打开 CSV 文件
+		file, err := os.OpenFile(filepath.Join(config.Workout_Dir, workoutName+"."+config.Ext_CSV), os.O_CREATE|os.O_WRONLY, os.ModePerm)
+		if err != nil {
+			panic(err)
+		}
+		defer file.Close()
+
+		// 解析 CSV 到结构体切片
+		var itemList []*config.WorkoutItem
+		if err := gocsv.MarshalFile(&itemList, file); err != nil {
+			panic(err)
+		}
+	},
+}
+
 var workoutCmd = &cobra.Command{
-	Use:   "workout",
-	Short: "workout",
+	Use:   "workout <workout_name>",
+	Short: "start a workout",
 	Long: `workout tool:
 workout workout_name: run workout
 -l: list workout
@@ -59,6 +87,7 @@ workout workout_name: run workout
 	}}
 
 func init() {
+	workoutCmd.AddCommand(newWorkoutCmd)
 	workoutCmd.Flags().BoolP("list", "l", false, "lsit available workout")
 	rootCmd.AddCommand(workoutCmd)
 }

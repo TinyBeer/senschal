@@ -4,6 +4,7 @@ import "path/filepath"
 
 const (
 	Ext_TOML = "toml"
+	Ext_CSV  = "csv"
 
 	Def_Data_Dir          = "data"
 	Conf_Dir_Name         = "conf"
