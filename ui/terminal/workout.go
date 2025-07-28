@@ -81,7 +81,12 @@ func initialModel(wcList []*config.WorkoutConfig, wc *config.WorkoutConfig) mode
 		m.status = Fin
 	} else {
 		m.curItem = m.wc.ItemList[m.curItemIdx]
-		m.countDown = m.curItem.Target
+		if m.curItem.Type == config.WorkoutType_Duration {
+			m.countDown = m.curItem.Target
+		} else {
+			m.status = Working
+		}
+
 	}
 	return m
 }
@@ -150,7 +155,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.curItem = nil
 					} else {
 						m.curItem = m.wc.ItemList[m.curItemIdx]
-						m.countDown = m.curItem.Target
+						if m.curItem.Type == config.WorkoutType_Duration {
+							m.countDown = m.curItem.Target
+						}
 					}
 				} else {
 					m.countDown = m.curItem.Target
@@ -175,11 +182,36 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.breaking = true
 					m.countDown = m.curItem.Break
 				}
-
 			}
 		}
 		return m, tick()
-
+	case tea.MouseMsg:
+		if msg.Button == tea.MouseButtonLeft && msg.Action == tea.MouseActionRelease {
+			if m.status == Working && m.curItem != nil && m.curItem.Type == config.WorkoutType_Count && !m.breaking {
+				m.countDown++
+				if m.countDown == m.curItem.Target {
+					if m.curItem.Break == 0 {
+						m.curRepeat++
+						m.countDown = 0
+						if m.curRepeat == m.curItem.Repeat {
+							m.curItemIdx++
+							m.curRepeat = 0
+							if m.curItemIdx == len(m.wc.ItemList) {
+								m.status = Fin
+								m.curItem = nil
+							} else {
+								m.breaking = false
+								m.curItem = m.wc.ItemList[m.curItemIdx]
+								m.countDown = m.curItem.Target
+							}
+						}
+					} else {
+						m.breaking = true
+						m.countDown = m.curItem.Break
+					}
+				}
+			}
+		}
 	}
 
 	return m, nil
@@ -257,7 +289,7 @@ func (m model) workoutListInfo() string {
 }
 
 func Workout(wcList []*config.WorkoutConfig, wc *config.WorkoutConfig) {
-	p := tea.NewProgram(initialModel(wcList, wc))
+	p := tea.NewProgram(initialModel(wcList, wc), tea.WithMouseAllMotion())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)

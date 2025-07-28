@@ -4,7 +4,7 @@
 ## 交互方式
 * [x] manager workout config by csv file
 * [ ] integrate image handler
-* [ ] workout 
+* [x] workout 
 * [ ] 终端UI
 * [ ] 交互式部署
 ## 文件
