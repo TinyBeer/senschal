@@ -1,11 +1,32 @@
 package component
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+)
 
 type Container interface {
 	GetHeight() int
 	GetWidth() int
-	GetCurrentContent(frame int) []string
+	GetCurrentContent(frame int) [][]StyleString
+}
+
+type StyleString struct {
+	Content string
+	Style   lipgloss.Style
+}
+
+func JoinStyleStringMatrix(matrix [][]StyleString) []string {
+	res := make([]string, len(matrix))
+	for _, arr := range matrix {
+		var str string
+		for _, sStr := range arr {
+			str += sStr.Style.Render(sStr.Content)
+		}
+		res = append(res, str)
+	}
+	return res
 }
 
 // box
@@ -25,24 +46,40 @@ func (b *Box) AddSub(c Container) {
 }
 
 // GetCurrentContent implements Container.
-func (b *Box) GetCurrentContent(frame int) []string {
+func (b *Box) GetCurrentContent(frame int) [][]StyleString {
 	// TODO support multi row and multi cow
 	h := b.GetHeight()
-	var strList []string
+	var content [][]StyleString
 	if b.direction == Direction_H {
-		strList = make([]string, h)
+		content = make([][]StyleString, h)
 	}
 	for _, c := range b.subs {
 		containerStrList := c.GetCurrentContent(frame)
 		if b.direction == Direction_H {
-			for i, str := range containerStrList {
-				strList[i] += str
+			maxLen := 0
+			for _, sStrList := range content {
+				length := 0
+				for _, sStr := range sStrList {
+					length += len(sStr.Content)
+				}
+				maxLen = max(maxLen, length)
+			}
+
+			for i, sStrList := range containerStrList {
+				length := 0
+				for _, sStr := range content[i] {
+					length += len(sStr.Content)
+				}
+				if maxLen-length > 0 {
+					content[i] = append(content[i], StyleString{Content: strings.Repeat(" ", maxLen-length)})
+				}
+				content[i] = append(content[i], sStrList...)
 			}
 		} else {
-			strList = append(strList, containerStrList...)
+			content = append(content, containerStrList...)
 		}
 	}
-	return strList
+	return content
 }
 
 // GetHeight implements Container.
@@ -109,9 +146,14 @@ func (t *InlineText) GetWidth() int {
 }
 
 // GetCurrentContent implements Container.
-func (t *InlineText) GetCurrentContent(frame int) []string {
-	return []string{
-		t.style.Render(slidingWindowDisplayString(t.content, t.width, frame)),
+func (t *InlineText) GetCurrentContent(frame int) [][]StyleString {
+	return [][]StyleString{
+		{
+			{
+				Content: slidingWindowDisplayString(t.content, t.width, frame),
+				Style:   t.style,
+			},
+		},
 	}
 }
 

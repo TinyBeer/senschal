@@ -285,7 +285,7 @@ func (m model) workoutListInfo() string {
 	v.AddSub(workoutContainer)
 	v.AddSub(itemContainre)
 
-	return strings.Join(v.GetCurrentContent(m.frame), "\n")
+	return strings.Join(component.JoinStyleStringMatrix(v.GetCurrentContent(m.frame)), "\n")
 }
 
 func Workout(wcList []*config.WorkoutConfig, wc *config.WorkoutConfig) {
