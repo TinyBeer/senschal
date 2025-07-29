@@ -1,12 +1,14 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"os"
-	"path/filepath"
-	"seneschal/config"
+	"seneschal/tool"
+	"time"
 
-	"github.com/gocarina/gocsv"
 	"github.com/spf13/cobra"
 )
 
@@ -15,36 +17,31 @@ var testCmd = &cobra.Command{
 	Short: "测试",
 	Long:  "开发阶段用于测试命令",
 	Run: func(cmd *cobra.Command, args []string) {
-		dir := config.Workout_Dir
-		ext := config.Ext_CSV
-		fileNameList, err := config.ListFilesWithExt(config.Workout_Dir, config.Ext_CSV)
-		if err != nil {
-			fmt.Println(err)
+		if len(args) != 1 {
+			fmt.Println(args)
 			return
 		}
 
-		for _, name := range fileNameList {
-			fileName := filepath.Join(dir, name+"."+ext)
-			fmt.Println("workout config file:", fileName)
-			// 打开 CSV 文件
-			file, err := os.OpenFile(fileName, os.O_RDONLY, os.ModePerm)
-			if err != nil {
-				panic(err)
-			}
-			defer file.Close()
-
-			// 解析 CSV 到结构体切片
-			var itemList []*config.WorkoutItem
-			if err := gocsv.UnmarshalFile(file, &itemList); err != nil {
-				panic(err)
-			}
-
-			// 打印结果
-			for _, item := range itemList {
-				fmt.Printf("%+v\n", item)
-			}
+		filePath := args[0]
+		file, err := os.Open(filePath)
+		if err != nil {
+			log.Fatal(err)
 		}
-
+		defer file.Close()
+		bs, err := io.ReadAll(file)
+		if err != nil {
+			log.Fatal(err)
+		}
+		data := new(tool.ImageTextData)
+		err = json.Unmarshal(bs, data)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for i := range 100 {
+			time.Sleep(time.Millisecond * 500)
+			fmt.Print("\033[H\033[2J")
+			fmt.Println(data.Data[i%len(data.Data)])
+		}
 	}}
 
 func init() {

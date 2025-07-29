@@ -14,6 +14,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	workoutCmd.AddCommand(newWorkoutCmd)
+	workoutCmd.Flags().BoolP("list", "l", false, "lsit available workout")
+	rootCmd.AddCommand(workoutCmd)
+}
+
 var newWorkoutCmd = &cobra.Command{
 	Use:   "new <workout_name>",
 	Short: "creat a new workout",
@@ -85,9 +91,3 @@ workout workout_name: run workout
 
 		terminal.Workout(wcList, wc)
 	}}
-
-func init() {
-	workoutCmd.AddCommand(newWorkoutCmd)
-	workoutCmd.Flags().BoolP("list", "l", false, "lsit available workout")
-	rootCmd.AddCommand(workoutCmd)
-}
