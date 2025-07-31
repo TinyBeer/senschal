@@ -45,13 +45,13 @@ var (
 
 type tickMsg time.Time
 
-//go:generate stringer -type=WorkoutStatus
+//go:generate stringer -type=WorkoutStatus -linecomment
 type WorkoutStatus int
 
 const (
-	Breaking WorkoutStatus = iota
-	Working
-	Fin
+	WorkoutStatus_Inactive WorkoutStatus = iota // INACTIVE
+	WorkoutStatus_Active                        // ACTIVE
+	WorkoutStatus_Fin                           // FIN
 )
 
 type model struct {
@@ -70,7 +70,7 @@ func initialModel(wcList []*config.WorkoutConfig, wc *config.WorkoutConfig) mode
 	m := model{
 		wcList:     wcList,
 		wc:         wc,
-		status:     Breaking,
+		status:     WorkoutStatus_Inactive,
 		curItem:    nil,
 		curItemIdx: 0,
 		breaking:   false,
@@ -78,13 +78,13 @@ func initialModel(wcList []*config.WorkoutConfig, wc *config.WorkoutConfig) mode
 		curRepeat:  0,
 	}
 	if wc == nil || len(wc.ItemList) == 0 {
-		m.status = Fin
+		m.status = WorkoutStatus_Fin
 	} else {
 		m.curItem = m.wc.ItemList[m.curItemIdx]
 		if m.curItem.Type == config.WorkoutType_Duration {
 			m.countDown = m.curItem.Target
 		} else {
-			m.status = Working
+			m.status = WorkoutStatus_Active
 		}
 
 	}
@@ -112,7 +112,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.curItemIdx++
 						m.curRepeat = 0
 						if m.curItemIdx == len(m.wc.ItemList) {
-							m.status = Fin
+							m.status = WorkoutStatus_Fin
 							m.curItem = nil
 						} else {
 							m.breaking = false
@@ -127,16 +127,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case " ":
 			switch m.status {
-			case Breaking:
-				m.status = Working
-			case Working:
-				m.status = Breaking
-			case Fin:
+			case WorkoutStatus_Inactive:
+				m.status = WorkoutStatus_Active
+			case WorkoutStatus_Active:
+				m.status = WorkoutStatus_Inactive
+			case WorkoutStatus_Fin:
 			}
 		}
 	case tickMsg:
 		m.frame++
-		if m.status != Working {
+		if m.status != WorkoutStatus_Active {
 			return m, tick()
 		}
 		if m.curItem == nil || (m.curItem.Type == config.WorkoutType_Count && !m.breaking) {
@@ -151,7 +151,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.curRepeat = 0
 					m.curItemIdx++
 					if m.curItemIdx == len(m.wc.ItemList) {
-						m.status = Fin
+						m.status = WorkoutStatus_Fin
 						m.curItem = nil
 					} else {
 						m.curItem = m.wc.ItemList[m.curItemIdx]
@@ -171,7 +171,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if m.curRepeat == m.curItem.Repeat {
 						m.curItemIdx++
 						if m.curItemIdx == len(m.wc.ItemList) {
-							m.status = Fin
+							m.status = WorkoutStatus_Fin
 							m.curItem = nil
 						} else {
 							m.curItem = m.wc.ItemList[m.curItemIdx]
@@ -187,7 +187,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tick()
 	case tea.MouseMsg:
 		if msg.Button == tea.MouseButtonLeft && msg.Action == tea.MouseActionRelease {
-			if m.status == Working && m.curItem != nil && m.curItem.Type == config.WorkoutType_Count && !m.breaking {
+			if m.status == WorkoutStatus_Active && m.curItem != nil && m.curItem.Type == config.WorkoutType_Count && !m.breaking {
 				m.countDown++
 				if m.countDown == m.curItem.Target {
 					if m.curItem.Break == 0 {
@@ -197,7 +197,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							m.curItemIdx++
 							m.curRepeat = 0
 							if m.curItemIdx == len(m.wc.ItemList) {
-								m.status = Fin
+								m.status = WorkoutStatus_Fin
 								m.curItem = nil
 							} else {
 								m.breaking = false
@@ -219,17 +219,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	s := ""
-	if m.status == Fin {
-		f := figure.NewFigure("FIN", "", true)
+	if m.status == WorkoutStatus_Fin {
+		f := figure.NewFigure(m.status.String(), "", true)
 		s += finishStyle.Render(f.String()) + "\n\n"
 	} else if m.curItem != nil {
 		s += component.StyleActiveItem.Render(m.curItem.Name) + "\t"
 		if m.breaking {
 			f := figure.NewFigure(fmt.Sprintf("%3d -- %3d", m.curItem.Break, m.countDown), "", true)
-			s += breakStyle.Render("breaking\n" + f.String())
+			s += breakStyle.Render(m.status.String() + "\n" + f.String())
 		} else {
 			f := figure.NewFigure(fmt.Sprintf("%3d -- %3d", m.curItem.Target, m.countDown), "", true)
-			s += workStyle.Render("working\n" + f.String())
+			s += workStyle.Render(m.status.String() + "\n" + f.String())
 		}
 		s += "\n\n"
 	}
@@ -273,9 +273,9 @@ func (m model) workoutListInfo() string {
 				targetInfo = fmt.Sprintf("%s: %ds", item.Type.String(), item.Target)
 			}
 
-			itemInfo.AddSub(component.NewInlineTextWithStyle(10, item.Name, style))
-			itemInfo.AddSub(component.NewInlineTextWithStyle(20, targetInfo, style))
-			itemInfo.AddSub(component.NewInlineTextWithStyle(20, "Repeat: "+repeatInfo, style))
+			itemInfo.AddSub(component.NewInlineTextWithStyle(20, item.Name, style))
+			itemInfo.AddSub(component.NewInlineTextWithStyle(16, targetInfo, style))
+			itemInfo.AddSub(component.NewInlineTextWithStyle(16, "Repeat: "+repeatInfo, style))
 			itemContainre.AddSub(itemInfo)
 		}
 
@@ -289,6 +289,7 @@ func (m model) workoutListInfo() string {
 }
 
 func Workout(wcList []*config.WorkoutConfig, wc *config.WorkoutConfig) {
+	fmt.Print("\033[H\033[2J")
 	p := tea.NewProgram(initialModel(wcList, wc), tea.WithMouseAllMotion())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
