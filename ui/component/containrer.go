@@ -18,7 +18,7 @@ type StyleString struct {
 }
 
 func JoinStyleStringMatrix(matrix [][]StyleString) []string {
-	res := make([]string, len(matrix))
+	res := make([]string, 0, len(matrix))
 	for _, arr := range matrix {
 		var str string
 		for _, sStr := range arr {
