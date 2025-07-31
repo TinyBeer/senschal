@@ -1,6 +1,8 @@
 # 自动环境安装工具
 用于快速将云服务器改造为工作模板环境。
 # TODO
+## Bug 修复
+* [x] 中文滑动窗口乱码
 ## 交互方式
 * [x] manager workout config by csv file
 * [ ] integrate image handler
@@ -26,3 +28,4 @@
 
 ## 输出美化
 * [x] 美化输出 使用表格输出列表内容
+* [x] 优化滑动窗口显示

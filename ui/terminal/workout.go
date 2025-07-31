@@ -273,7 +273,7 @@ func (m model) workoutListInfo() string {
 				targetInfo = fmt.Sprintf("%s: %ds", item.Type.String(), item.Target)
 			}
 
-			itemInfo.AddSub(component.NewInlineTextWithStyle(20, item.Name, style))
+			itemInfo.AddSub(component.NewInlineTextWithStyle(10, item.Name, style))
 			itemInfo.AddSub(component.NewInlineTextWithStyle(20, targetInfo, style))
 			itemInfo.AddSub(component.NewInlineTextWithStyle(20, "Repeat: "+repeatInfo, style))
 			itemContainre.AddSub(itemInfo)
