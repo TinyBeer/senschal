@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"reflect"
 	"seneschal/config"
 	"seneschal/tool"
+	"strconv"
 	"strings"
 )
 
@@ -15,9 +17,12 @@ type EnvMgrDocker struct {
 }
 
 type DockerDiagnosis struct {
-	IsInstalled      bool
-	Version          string
-	MissingImageList []config.Image
+	IsInstalled       bool
+	Version           string
+	MatchVersion      bool
+	HaveDockerGroup   bool
+	UserInDockerGroup bool
+	MissingImageList  []config.Image
 }
 
 // Name implements IEnvMgr.
@@ -61,7 +66,32 @@ func checkDocker(e *tool.SSHExecutor, dc *config.Docker) (*DockerDiagnosis, erro
 			}
 		}
 		res.IsInstalled = true
-		res.Version = string(bytes.Trim(output, " \n"))
+		version := string(bytes.Trim(output, " \n"))
+		res.Version = version
+
+		if dc.Version != "" {
+			ok, err := compareVersion(dc.Version, version)
+			if err != nil {
+				return nil, fmt.Errorf("failed to check docker version, err: %v", err)
+			}
+			res.MatchVersion = ok
+		}
+
+		if dc.CheckUserGroup {
+			output, err = e.ExecuteCommand("getent group docker")
+			if err != nil {
+				return nil, fmt.Errorf("failed to check user group docker, err: %v", err)
+			}
+			hasGroup := bytes.HasPrefix(output, []byte("docker"))
+			res.HaveDockerGroup = hasGroup
+			if hasGroup {
+				output, err = e.ExecuteCommand("groups")
+				if err != nil {
+					return nil, fmt.Errorf("failed to check user group docker, err: %v", err)
+				}
+				res.UserInDockerGroup = bytes.Contains(output, []byte("docker"))
+			}
+		}
 
 		targetImageList := dc.ImageList
 		if len(targetImageList) != 0 {
@@ -82,6 +112,52 @@ func checkDocker(e *tool.SSHExecutor, dc *config.Docker) (*DockerDiagnosis, erro
 				}
 			}
 		}
+	}
+	return res, nil
+}
+
+func compareVersion(expect, actual string) (bool, error) {
+	versionUp := false
+	upLabel := "^"
+	if strings.HasPrefix(expect, upLabel) {
+		versionUp = true
+		expect = strings.TrimLeft(expect, upLabel)
+	}
+	ec, err := parseVersion(expect)
+	if err != nil {
+		return false, err
+	}
+	ac, err := parseVersion(actual)
+	if err != nil {
+		return false, err
+	}
+
+	if !versionUp {
+		return reflect.DeepEqual(ec, ac), nil
+	}
+
+	if len(ec) > len(ac) {
+		return false, fmt.Errorf("invalid docker version config[%v]", expect)
+	}
+
+	for i, c := range ec {
+		if c == ac[i] {
+			continue
+		}
+		return c < ac[i], nil
+	}
+	return true, nil
+}
+
+func parseVersion(v string) ([]int, error) {
+	vCodeList := strings.Split(v, ".")
+	res := make([]int, 0, len(vCodeList))
+	for _, str := range vCodeList {
+		code, err := strconv.Atoi(str)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, code)
 	}
 	return res, nil
 }

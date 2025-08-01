@@ -31,8 +31,10 @@ type EnvConfig struct {
 }
 
 type Docker struct {
-	Enable    bool    `mapstructure:"enable"`
-	ImageList []Image `mapstructure:"image_list"`
+	Enable         bool    `mapstructure:"enable"`
+	Version        string  `mapstructure:"version"`
+	CheckUserGroup bool    `mapstructure:"check_user_group"`
+	ImageList      []Image `mapstructure:"image_list"`
 }
 
 // func GetEnvConfig() (*EnvConfig, error) {
@@ -92,7 +94,7 @@ func getEnvConfigMap(dir string) (map[string]*EnvConfig, error) {
 	for _, name := range fileNames {
 		c, err := readEnvConfigFromToml(dir, name)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read config from [%s, %s], err: %v", dir, name, err)
 		}
 		alias := name
 		if c.Alias != "" {

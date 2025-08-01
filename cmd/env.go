@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"reflect"
 	"seneschal/config"
 	"seneschal/tool"
 	"strings"
@@ -120,26 +121,27 @@ var envCheckCmd = &cobra.Command{
 		}
 
 		var data [][]string
-		data = append(data, []string{"alias", "result"})
+		tblHead := []string{"alias"}
+
+		t := reflect.TypeOf(DockerDiagnosis{})
+		for i := range t.NumField() {
+			tblHead = append(tblHead, t.Field(i).Name)
+		}
+		data = append(data, tblHead)
 		for _, alias := range sshAliasList {
 			// log.Printf("environment[%v] check machine[%v] start ...\n", envAlias, alias)
+			tblRow := []string{alias}
 			c := scm[alias]
-			var result string
 			for _, mgr := range envMgrList {
 				// log.Printf("environment manager[%v] checking ...\n", mgr.GetName())
 				res, err := mgr.Check(c)
 				if err != nil {
-					result = fmt.Sprintf("check environment with config[%v] failed, err:%v\n", c.SSH, err)
+					tblRow = append(tblRow, fmt.Sprintf("check environment with config[%v] failed, err:%v\n", c.SSH, err))
 				} else {
 					if diagnosis, ok := res.(*DockerDiagnosis); ok {
-						if !diagnosis.IsInstalled {
-							result = "docker is not installed"
-						} else {
-							if len(diagnosis.MissingImageList) != 0 {
-								result = fmt.Sprintf("missing images: %v", diagnosis.MissingImageList)
-							} else {
-								result = "ok"
-							}
+						v := reflect.ValueOf(*diagnosis)
+						for i := range v.NumField() {
+							tblRow = append(tblRow, fmt.Sprintf("%v", v.Field(i)))
 						}
 					} else {
 						log.Fatalf("failed to convert res[%v] to diagnosis", res)
@@ -147,7 +149,7 @@ var envCheckCmd = &cobra.Command{
 					}
 				}
 			}
-			data = append(data, []string{alias, result})
+			data = append(data, tblRow)
 		}
 		tool.ShowTable(data)
 	},
