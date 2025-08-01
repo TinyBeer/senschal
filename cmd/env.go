@@ -2,11 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"log"
-	"reflect"
 	"seneschal/config"
 	"seneschal/tool"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -18,147 +15,13 @@ type IEnvMgr interface {
 }
 
 func init() {
-	envCmd.AddCommand(envCheckCmd)
-	envCmd.AddCommand(envDeployCmd)
 	rootCmd.AddCommand(envCmd)
-}
-
-var envDeployCmd = &cobra.Command{
-	Use:   "deploy <alias>",
-	Short: "部署预制环境",
-	Long:  "为指定机器部署预制环境",
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) != 2 {
-			log.Println("请输入需要检查的 环境 和 机器别名")
-			return
-		}
-		ecm, err := config.GetEnvConfigMap()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		scm, err := config.GetSSHConfigMap()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		envAlias := args[0]
-		ec, find := ecm[envAlias]
-		if !find {
-			log.Printf("未找到环境[%s]的配置信息\n", envAlias)
-			return
-		}
-		var envMgrList []IEnvMgr
-		envMgrList = append(envMgrList, NewEnvMgrDocker(ec))
-
-		sshAliasList := strings.Split(args[1], ",")
-
-		missingCfg := false
-		for _, alias := range sshAliasList {
-			if _, ok := scm[alias]; !ok {
-				log.Printf("未找到%s的配置信息\n", alias)
-				missingCfg = true
-			}
-		}
-		if missingCfg {
-			return
-		}
-		for _, alias := range args {
-			c := scm[alias]
-			for _, mgr := range envMgrList {
-				log.Printf("environment manager[%v] deploying ...\n", mgr.GetName())
-				err := mgr.Deploy(c)
-				if err != nil {
-					log.Printf("deploy environment with config[%v] failed, err:%v\n", c, err)
-				}
-			}
-		}
-	},
-}
-
-var envCheckCmd = &cobra.Command{
-	Use:   "check <env> <alias1>[,alias2]...",
-	Short: "检查哪些环境已经部署",
-	Long:  "输出已经完成部署的内容",
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) != 2 {
-			log.Println("请输入需要检查的 环境 和 机器别名")
-			return
-		}
-		ecm, err := config.GetEnvConfigMap()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		scm, err := config.GetSSHConfigMap()
-		if err != nil {
-			log.Println(err)
-			return
-		}
-
-		envAlias := args[0]
-		ec, find := ecm[envAlias]
-		if !find {
-			log.Printf("未找到环境[%s]的配置信息\n", envAlias)
-			return
-		}
-		var envMgrList []IEnvMgr
-		envMgrList = append(envMgrList, NewEnvMgrDocker(ec))
-
-		sshAliasList := strings.Split(args[1], ",")
-
-		missingCfg := false
-		for _, alias := range sshAliasList {
-			if _, ok := scm[alias]; !ok {
-				log.Printf("未找到%s的配置信息\n", alias)
-				missingCfg = true
-			}
-		}
-		if missingCfg {
-			return
-		}
-
-		var data [][]string
-		tblHead := []string{"alias"}
-
-		t := reflect.TypeOf(DockerDiagnosis{})
-		for i := range t.NumField() {
-			tblHead = append(tblHead, t.Field(i).Name)
-		}
-		data = append(data, tblHead)
-		for _, alias := range sshAliasList {
-			// log.Printf("environment[%v] check machine[%v] start ...\n", envAlias, alias)
-			tblRow := []string{alias}
-			c := scm[alias]
-			for _, mgr := range envMgrList {
-				// log.Printf("environment manager[%v] checking ...\n", mgr.GetName())
-				res, err := mgr.Check(c)
-				if err != nil {
-					tblRow = append(tblRow, fmt.Sprintf("check environment with config[%v] failed, err:%v\n", c.SSH, err))
-				} else {
-					if diagnosis, ok := res.(*DockerDiagnosis); ok {
-						v := reflect.ValueOf(*diagnosis)
-						for i := range v.NumField() {
-							tblRow = append(tblRow, fmt.Sprintf("%v", v.Field(i)))
-						}
-					} else {
-						log.Fatalf("failed to convert res[%v] to diagnosis", res)
-						return
-					}
-				}
-			}
-			data = append(data, tblRow)
-		}
-		tool.ShowTable(data)
-	},
 }
 
 var envCmd = &cobra.Command{
 	Use:   "env",
-	Short: "环境配置",
-	Long:  "列出当前环境配置",
+	Short: "environment manage tool",
+	Long:  "list environment in config file",
 	Run: func(cmd *cobra.Command, args []string) {
 		ecm, err := config.GetEnvConfigMap()
 		if err != nil {
