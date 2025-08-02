@@ -19,11 +19,11 @@ var testCmd = &cobra.Command{
 		}
 
 		filePath := args[0]
-		fl, err := file.ListFileWithExt(filePath, file.Ext_GIF)
+		err := file.InsertCodeIntoProto(filePath, file.ReplaceProbe_Message, "message Test2 {\n}\n\n")
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(fl)
+
 	}}
 
 func init() {
