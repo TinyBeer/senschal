@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"seneschal/tool/file"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -64,7 +65,7 @@ type Docker struct {
 func readEnvConfigFromToml(dir, name string) (*EnvConfig, error) {
 	v := viper.New()
 	v.SetConfigName(name)
-	v.SetConfigType(Ext_TOML)
+	v.SetConfigType(file.Ext_TOML)
 	v.AddConfigPath(dir)
 
 	// 读取配置文件
@@ -87,7 +88,7 @@ func GetEnvConfigMap() (map[string]*EnvConfig, error) {
 
 func getEnvConfigMap(dir string) (map[string]*EnvConfig, error) {
 	m := make(map[string]*EnvConfig)
-	fileNames, err := ListFilesWithExt(dir, Ext_TOML)
+	fileNames, err := file.ListFileNameWithExt(dir, file.Ext_TOML)
 	if err != nil {
 		return nil, err
 	}

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"seneschal/config"
 	"seneschal/tool"
+	"seneschal/tool/file"
 	"seneschal/ui/terminal"
 	"sort"
 
@@ -31,7 +32,7 @@ var newWorkoutCmd = &cobra.Command{
 		}
 		workoutName := args[0]
 		// 打开 CSV 文件
-		file, err := os.OpenFile(filepath.Join(config.Workout_Dir, workoutName+"."+config.Ext_CSV), os.O_CREATE|os.O_WRONLY, os.ModePerm)
+		file, err := os.OpenFile(filepath.Join(config.Workout_Dir, workoutName+"."+file.Ext_CSV), os.O_CREATE|os.O_WRONLY, os.ModePerm)
 		if err != nil {
 			panic(err)
 		}

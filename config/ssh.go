@@ -1,6 +1,8 @@
 package config
 
 import (
+	"seneschal/tool/file"
+
 	"github.com/spf13/viper"
 )
 
@@ -32,7 +34,7 @@ func NewSSHConfig() *SSHConfig {
 func readSSHConfigFromToml(dir, name string) (*SSHConfig, error) {
 	v := viper.New()
 	v.SetConfigName(name)
-	v.SetConfigType(Ext_TOML)
+	v.SetConfigType(file.Ext_TOML)
 	v.AddConfigPath(dir)
 
 	// 读取配置文件
@@ -64,7 +66,7 @@ func GetSSHConfigMap() (map[string]*SSHConfig, error) {
 
 func getSSHConfigMap(dir string) (map[string]*SSHConfig, error) {
 	m := make(map[string]*SSHConfig)
-	fileNames, err := ListFilesWithExt(dir, Ext_TOML)
+	fileNames, err := file.ListFileNameWithExt(dir, file.Ext_TOML)
 	if err != nil {
 		return nil, err
 	}

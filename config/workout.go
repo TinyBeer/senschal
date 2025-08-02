@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"seneschal/tool/file"
 
 	"github.com/gocarina/gocsv"
 )
@@ -36,7 +37,7 @@ func NewWorkoutConfig() *WorkoutConfig {
 }
 
 func GetWorkoutConfigMap(dir string) (map[string]*WorkoutConfig, error) {
-	fileNameList, err := ListFilesWithExt(dir, Ext_CSV)
+	fileNameList, err := file.ListFileNameWithExt(dir, file.Ext_CSV)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +79,7 @@ func GetWorkoutConfigMap(dir string) (map[string]*WorkoutConfig, error) {
 // }
 
 func readWorkoutConfigFromCsv(dir, name string) (*WorkoutConfig, error) {
-	fileName := filepath.Join(dir, name+"."+Ext_CSV)
+	fileName := filepath.Join(dir, name+"."+file.Ext_CSV)
 	// 打开 CSV 文件
 	file, err := os.OpenFile(fileName, os.O_RDONLY, os.ModePerm)
 	if err != nil {

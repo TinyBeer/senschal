@@ -1,13 +1,9 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"os"
-	"seneschal/tool"
-	"time"
+	"seneschal/tool/file"
 
 	"github.com/spf13/cobra"
 )
@@ -23,25 +19,11 @@ var testCmd = &cobra.Command{
 		}
 
 		filePath := args[0]
-		file, err := os.Open(filePath)
+		fl, err := file.ListFileWithExt(filePath, file.Ext_GIF)
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer file.Close()
-		bs, err := io.ReadAll(file)
-		if err != nil {
-			log.Fatal(err)
-		}
-		data := new(tool.ImageTextData)
-		err = json.Unmarshal(bs, data)
-		if err != nil {
-			log.Fatal(err)
-		}
-		for i := range 100 {
-			time.Sleep(time.Millisecond * 500)
-			fmt.Print("\033[H\033[2J")
-			fmt.Println(data.Data[i%len(data.Data)])
-		}
+		fmt.Println(fl)
 	}}
 
 func init() {
