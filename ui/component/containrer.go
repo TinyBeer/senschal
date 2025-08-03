@@ -6,6 +6,15 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+const (
+	RoundedRectangle_TopLeft        = "╭"
+	RoundedRectangle_TopRight       = "╮"
+	RoundedRectangle_BottomLeft     = "╰"
+	RoundedRectangle_BottomRight    = "╯"
+	RoundedRectangle_HorizontalLine = "─"
+	RoundedRectangle_VerticalLine   = "│"
+)
+
 type Container interface {
 	GetHeight() int
 	GetWidth() int
@@ -79,6 +88,7 @@ func (b *Box) GetCurrentContent(frame int) [][]StyleString {
 			content = append(content, containerStrList...)
 		}
 	}
+
 	return content
 }
 
