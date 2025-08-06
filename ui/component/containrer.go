@@ -66,23 +66,24 @@ func (b *Box) GetCurrentContent(frame int) [][]StyleString {
 		containerStrList := c.GetCurrentContent(frame)
 		if b.direction == Direction_H {
 			maxLen := 0
-			for _, sStrList := range content {
+			for _, sStrList := range containerStrList {
 				length := 0
 				for _, sStr := range sStrList {
-					length += len(sStr.Content)
+					length += getDisplayLength(sStr.Content)
 				}
 				maxLen = max(maxLen, length)
 			}
-
-			for i, sStrList := range containerStrList {
+			for i := range content {
 				length := 0
-				for _, sStr := range content[i] {
-					length += len(sStr.Content)
+				if i < len(containerStrList) {
+					for _, sStr := range containerStrList[i] {
+						length += getDisplayLength(sStr.Content)
+					}
+					content[i] = append(content[i], containerStrList[i]...)
 				}
 				if maxLen-length > 0 {
 					content[i] = append(content[i], StyleString{Content: strings.Repeat(" ", maxLen-length)})
 				}
-				content[i] = append(content[i], sStrList...)
 			}
 		} else {
 			content = append(content, containerStrList...)
@@ -168,3 +169,59 @@ func (t *InlineText) GetCurrentContent(frame int) [][]StyleString {
 }
 
 var _ Container = new(InlineText)
+
+type Rectangle struct {
+	content Container
+	round   bool
+	style   lipgloss.Style
+}
+
+func NewRectangle(content Container, round bool, style lipgloss.Style) *Rectangle {
+	return &Rectangle{
+		content: content,
+		round:   round,
+		style:   style,
+	}
+}
+
+// GetCurrentContent implements Container.
+func (r *Rectangle) GetCurrentContent(frame int) [][]StyleString {
+	h, w := r.GetHeight(), r.GetWidth()
+	cc := r.content.GetCurrentContent(frame)
+
+	content := make([][]StyleString, h)
+	if r.round {
+		content[0] = append(content[0], StyleString{
+			Content: RoundedRectangle_TopLeft + strings.Repeat(RoundedRectangle_HorizontalLine, w-2) + RoundedRectangle_TopRight,
+			Style:   r.style,
+		})
+		for i := range cc {
+			content[i+1] = append([]StyleString{{
+				Content: RoundedRectangle_VerticalLine,
+				Style:   r.style,
+			}}, append(cc[i], StyleString{
+				Content: RoundedRectangle_VerticalLine,
+				Style:   r.style,
+			})...)
+		}
+		content[h-1] = append(content[h-1], StyleString{
+			Content: RoundedRectangle_BottomLeft + strings.Repeat(RoundedRectangle_HorizontalLine, w-2) + RoundedRectangle_BottomRight,
+			Style:   r.style,
+		})
+	} else {
+		panic("not support yet")
+	}
+	return content
+}
+
+// GetHeight implements Container.
+func (r *Rectangle) GetHeight() int {
+	return r.content.GetHeight() + 2
+}
+
+// GetWidth implements Container.
+func (r *Rectangle) GetWidth() int {
+	return r.content.GetWidth() + 2
+}
+
+var _ Container = new(Rectangle)

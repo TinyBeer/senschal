@@ -6,6 +6,7 @@
 * [ ] 根据现有文件 生产模板
 ## Bug 修复
 * [x] 中文滑动窗口乱码
+* [x] Box组建显示异常
 ## 交互方式
 * [x] manager workout config by csv file
 * [ ] integrate image handler
@@ -31,6 +32,4 @@
 * docker 
   * [x] docker 用户组检查
   * [x] docker 版本号检查
-## 输出美化
-* [x] 美化输出 使用表格输出列表内容
-* [x] 优化滑动窗口显示
+

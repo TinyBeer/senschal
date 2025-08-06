@@ -28,10 +28,22 @@ func slidingWindowDisplayString(str string, width, frame int) string {
 	return candidate[idx]
 }
 
+func getDisplayLength(str string) int {
+	length := 0
+	for _, r := range []rune(str) {
+		if isWideCharacter(r) {
+			length += 2
+		} else {
+			length++
+		}
+	}
+	return length
+}
+
 func getCandidate(str string, width int) []string {
 	rs := []rune(str)
 	var candidate []string
-	for i := 0; i < len(rs); i++ {
+	for i := range rs {
 		ld := 0
 		j := i
 		for ; j < len(rs); j++ {
