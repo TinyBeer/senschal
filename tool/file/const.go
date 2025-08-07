@@ -12,6 +12,7 @@ const (
 type ReplaceProbe int
 
 const (
-	ReplaceProbe_Service ReplaceProbe = iota //api place
+	ReplaceProbe_RPC     ReplaceProbe = iota //rpc place
 	ReplaceProbe_Message                     //message place
+	ReplaceProbe_Func                        //func place
 )

@@ -8,13 +8,14 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[ReplaceProbe_Service-0]
+	_ = x[ReplaceProbe_RPC-0]
 	_ = x[ReplaceProbe_Message-1]
+	_ = x[ReplaceProbe_Func-2]
 }
 
-const _ReplaceProbe_name = "api placemessage place"
+const _ReplaceProbe_name = "rpc placemessage placefunc place"
 
-var _ReplaceProbe_index = [...]uint8{0, 9, 22}
+var _ReplaceProbe_index = [...]uint8{0, 9, 22, 32}
 
 func (i ReplaceProbe) String() string {
 	if i < 0 || i >= ReplaceProbe(len(_ReplaceProbe_index)-1) {

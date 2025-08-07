@@ -11,6 +11,7 @@ const (
 	SSH_Conf_Dir_Name     = "ssh"
 	SSH_Key_Dir_Name      = "ssh_key"
 	Workout_Dir_Name      = "workout"
+	Project_Dir_Name      = "project"
 )
 
 var (
@@ -22,4 +23,5 @@ var (
 	SSH_CFG_DIR      = filepath.Join(CFG_DIR, SSH_Conf_Dir_Name)
 	SSH_KEY_DIR      = filepath.Join(SSH_CFG_DIR, SSH_Key_Dir_Name)
 	Workout_Dir      = filepath.Join(CFG_DIR, Workout_Dir_Name)
+	Project_Dir      = filepath.Join(CFG_DIR, Project_Dir_Name)
 )

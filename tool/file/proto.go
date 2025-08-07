@@ -1,10 +1,10 @@
 package file
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/emicklei/proto"
 )
@@ -15,22 +15,27 @@ type ProtoInfo struct {
 	RPCList     []string
 }
 
-func InsertCodeIntoProto(filePath string, probe ReplaceProbe, code string) error {
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		return err
+type ProtoMessageOpt func() string
+
+func ProtoMessageWithField(typ, name string) ProtoMessageOpt {
+	return func() string {
+		return fmt.Sprintf("%s %s", typ, name)
 	}
+}
 
-	old := []byte("//" + probe.String())
-	new := append([]byte(code), old...)
-
-	contain := bytes.Contains(content, old)
-	if !contain {
-		return fmt.Errorf("file[%s] not contain insert probe[%s], please manually add first", filePath, probe.String())
+func GenerateMessage(name string, fields ...ProtoMessageOpt) string {
+	var filedList []string
+	for i, f := range fields {
+		filedList = append(filedList, fmt.Sprintf("\t%s = %d;", f(), i+1))
 	}
-	newContent := bytes.Replace(content, old, new, 1)
+	if len(fields) == 0 {
+		return fmt.Sprintf("message %s{}\n", name)
+	}
+	return fmt.Sprintf("message %s{\n%s\n}\n", name, strings.Join(filedList, "\n"))
+}
 
-	return os.WriteFile(filePath, newContent, 0644)
+func GenerateRPC(name string, reqs []string, rets []string) string {
+	return fmt.Sprintf("\trpc %s(%s) returns(%s){};", name, strings.Join(reqs, ","), strings.Join(rets, ","))
 }
 
 func ParseProtoFile(filePath string) (*ProtoInfo, error) {
