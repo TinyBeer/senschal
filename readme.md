@@ -24,6 +24,7 @@
   * [x] 使用英特网安装
   * [x] 使用deb安装包安装
 * [x] 自动添加用户组
+* [ ] optimize deploy process
 ### docker镜像
 * [x] docker 镜像加载
 * [x] 优化镜像拉取 宿主机 docker拉取缺失的镜像

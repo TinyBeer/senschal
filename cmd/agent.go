@@ -39,9 +39,9 @@ var agentListCmd = &cobra.Command{
 			return
 		}
 		var data [][]string
-		data = append(data, []string{"alias", "host"})
+		data = append(data, []string{"alias", "host", "user"})
 		for k, v := range m {
-			data = append(data, []string{k, v.SSH.Host})
+			data = append(data, []string{k, v.SSH.Host, v.SSH.User})
 		}
 		tool.ShowTable(data)
 	},
@@ -92,7 +92,7 @@ var agentCheckCmd = &cobra.Command{
 			log.Printf("未找到环境[%s]的配置信息\n", envAlias)
 			return
 		}
-		var envMgrList []IEnvMgr
+		var envMgrList []envmgr.IEnvMgr
 		envMgrList = append(envMgrList, envmgr.NewEnvMgrDocker(ec))
 
 		sshAliasList := strings.Split(args[0], ",")
@@ -170,7 +170,7 @@ var agentDeployCmd = &cobra.Command{
 			log.Printf("未找到环境[%s]的配置信息\n", envAlias)
 			return
 		}
-		var envMgrList []IEnvMgr
+		var envMgrList []envmgr.IEnvMgr
 		envMgrList = append(envMgrList, envmgr.NewEnvMgrDocker(ec))
 
 		sshAliasList := strings.Split(args[0], ",")

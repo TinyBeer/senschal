@@ -16,6 +16,8 @@ type EnvMgrDocker struct {
 	cnf *config.Docker
 }
 
+var _ IEnvMgr = new(EnvMgrDocker)
+
 type DockerDiagnosis struct {
 	IsInstalled       bool
 	Version           string
@@ -26,8 +28,8 @@ type DockerDiagnosis struct {
 }
 
 // Name implements IEnvMgr.
-func (e *EnvMgrDocker) GetName() string {
-	return "docker"
+func (e *EnvMgrDocker) GetName() Environment {
+	return Environment_Docker
 }
 
 func NewEnvMgrDocker(ec *config.EnvConfig) *EnvMgrDocker {
@@ -206,7 +208,8 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 				}
 				fmt.Println(string(output))
 			}
-
+		}
+		if !diagnosis.HaveDockerGroup {
 			// user group docker
 			_, err = se.ExecuteCommand("getent group docker > /dev/null 2>&1")
 			if err != nil {
@@ -233,7 +236,6 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 				}
 			}
 		}
-
 		if len(diagnosis.MissingImageList) != 0 {
 			//  1.3 load images
 			log.Println("docker images loading ...")
@@ -270,5 +272,3 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 
 	return nil
 }
-
-var _ IEnvMgr = new(EnvMgrDocker)

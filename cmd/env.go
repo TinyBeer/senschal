@@ -8,12 +8,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type IEnvMgr interface {
-	GetName() string
-	Check(c *config.SSHConfig) (any, error)
-	Deploy(c *config.SSHConfig) error
-}
-
 func init() {
 	rootCmd.AddCommand(envCmd)
 }
