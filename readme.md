@@ -2,6 +2,7 @@
 用于快速将云服务器改造为工作模板环境。
 # TODO
 ## 工具
+* [x] todo tool
 * [x] joy project 管理工具
 * [ ] 模板工具 用于生成常用配置文件
 * [ ] 根据现有文件 生产模板
@@ -24,7 +25,7 @@
   * [x] 使用英特网安装
   * [x] 使用deb安装包安装
 * [x] 自动添加用户组
-* [ ] optimize deploy process
+* [x] optimize deploy process
 ### docker镜像
 * [x] docker 镜像加载
 * [x] 优化镜像拉取 宿主机 docker拉取缺失的镜像
