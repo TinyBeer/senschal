@@ -239,19 +239,11 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 		if len(diagnosis.MissingImageList) != 0 {
 			//  1.3 load images
 			log.Println("docker images loading ...")
+			err := tool.DockerLoadImageList(diagnosis.MissingImageList)
+			if err != nil {
+				return err
+			}
 			for _, image := range diagnosis.MissingImageList {
-				if !image.LocalFileExist() {
-					bs, err := tool.ExecuteCommand(fmt.Sprintf("docker pull %s", string(image)))
-					if err != nil {
-						return err
-					}
-					fmt.Println(string(bs))
-					bs, err = tool.ExecuteCommand(fmt.Sprintf("docker save -o %s %s", image.LocalFilePath(), string(image)))
-					if err != nil {
-						return err
-					}
-					fmt.Println(string(bs))
-				}
 				err = tool.Copy(image.LocalFilePath(), c.Alias+":ops/docker_image/"+image.Name())
 				if err != nil {
 					return err

@@ -1,6 +1,8 @@
 # 自动环境安装工具
 用于快速将云服务器改造为工作模板环境。
 # TODO
+## optimization
+* [ ] refactor docker environment manager
 ## 工具
 * [x] todo tool
 * [x] joy project 管理工具
