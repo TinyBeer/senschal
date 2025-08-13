@@ -12,7 +12,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	FlagGenDir      = "gen_dir"
+	FlagSettingFile = "setting_file"
+)
+
 func init() {
+	joyTplExecCmd.Flags().String(FlagGenDir, "", "set file generate dir")
+	joyTplExecCmd.Flags().String(FlagSettingFile, "", "set file where setting read from")
+	joyTplCmd.AddCommand(joyTplExecCmd)
+	joyCmd.AddCommand(joyTplCmd)
 	joyInterCmd.Flags().Bool("lobby", false, "register lobby interface at same time")
 	joyCmd.AddCommand(joyInterCmd)
 	joyCmd.Flags().BoolP("list", "l", false, "list project config")
@@ -165,5 +174,58 @@ var joyInterCmd = &cobra.Command{
 			}
 		}
 
+	},
+}
+
+var joyTplCmd = &cobra.Command{
+	Use:   "tpl [tpl_name] [flags]",
+	Short: "tpl tool",
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			dirList, err := file.ListDir(config.Tpl_Dir)
+			if err != nil {
+				log.Fatal(err)
+			}
+			data := [][]string{{"name"}}
+			for _, dir := range dirList {
+				data = append(data, []string{dir})
+			}
+			tool.ShowTable(data)
+			return
+		}
+	},
+}
+
+var joyTplExecCmd = &cobra.Command{
+	Use:   "exec <tpl_name> [flags]",
+	Short: "execute tpl to generate files",
+	Long:  "execute tpl to generate files\nNotice: setting file variable name should be lower case\nNotice: toml template is not support",
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) != 1 {
+			cmd.Usage()
+			return
+		}
+		tplName := args[0]
+		tplPath := filepath.Join(config.Tpl_Dir, tplName)
+		genDir, err := cmd.Flags().GetString(FlagGenDir)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if genDir == "" {
+			genDir = filepath.Join(config.Tpl_Gen_Dir, tplName)
+		}
+
+		settingFilePath, err := cmd.Flags().GetString(FlagSettingFile)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		if settingFilePath == "" {
+			settingFilePath = filepath.Join(config.Tpl_Dir, tplName, config.Tpl_Setting_Name+"."+file.Ext_TOML)
+		}
+		err = file.ExecuteTemplate(tplPath, genDir, settingFilePath)
+		if err != nil {
+			log.Fatal(err)
+		}
 	},
 }

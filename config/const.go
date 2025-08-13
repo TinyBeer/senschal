@@ -13,6 +13,9 @@ const (
 	Workout_Dir_Name      = "workout"
 	Project_Dir_Name      = "project"
 	Todo_Dir_Name         = "todo"
+	Tpl_Dir_Name          = "tpl"
+	Tpl_Gen_Dir_Name      = "_gen"
+	Tpl_Setting_Name      = "setting"
 )
 
 var (
@@ -25,5 +28,7 @@ var (
 	SSH_KEY_DIR      = filepath.Join(SSH_CFG_DIR, SSH_Key_Dir_Name)
 	Workout_Dir      = filepath.Join(CFG_DIR, Workout_Dir_Name)
 	Project_Dir      = filepath.Join(CFG_DIR, Project_Dir_Name)
-	Todo_Dir         = filepath.Join(CFG_DIR, Todo_Dir_Name)
+	Todo_Dir         = filepath.Join(Def_Data_Dir, Todo_Dir_Name)
+	Tpl_Dir          = filepath.Join(Def_Data_Dir, Tpl_Dir_Name)
+	Tpl_Gen_Dir      = filepath.Join(Def_Data_Dir, Tpl_Gen_Dir_Name)
 )

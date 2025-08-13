@@ -6,6 +6,7 @@ const (
 	Ext_PROTO = "proto"
 	Ext_GIF   = "gif"
 	Ext_JSON  = "json"
+	// Ext_TPL   = "tpl"
 )
 
 //go:generate stringer -type=ReplaceProbe -linecomment

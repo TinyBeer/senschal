@@ -2,12 +2,11 @@
 用于快速将云服务器改造为工作模板环境。
 # TODO
 ## optimization
-* [ ] refactor docker environment manager
+* [x] refactor docker environment manager
 ## 工具
 * [x] todo tool
 * [x] joy project 管理工具
-* [ ] 模板工具 用于生成常用配置文件
-* [ ] 根据现有文件 生产模板
+* [x] template tool for file generateion
 ## Bug 修复
 * [x] 中文滑动窗口乱码
 * [x] Box组建显示异常
