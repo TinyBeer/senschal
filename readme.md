@@ -2,6 +2,7 @@
 用于快速将云服务器改造为工作模板环境。
 # TODO
 ## optimization
+* [x] optimize joy tpl -- support all template
 * [x] refactor docker environment manager
 ## 工具
 * [x] todo tool

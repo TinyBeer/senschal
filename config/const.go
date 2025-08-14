@@ -15,6 +15,7 @@ const (
 	Todo_Dir_Name         = "todo"
 	Tpl_Dir_Name          = "tpl"
 	Tpl_Gen_Dir_Name      = "_gen"
+	Tpl_Template_Dir_Name = "template"
 	Tpl_Setting_Name      = "setting"
 )
 

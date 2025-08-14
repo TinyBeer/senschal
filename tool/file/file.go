@@ -86,7 +86,7 @@ func ListFileWithoutExt(dir string, ext string) ([]string, error) {
 	return files, nil
 }
 
-func ListDir(dir string) ([]string, error) {
+func ListDirName(dir string) ([]string, error) {
 	infoList, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err

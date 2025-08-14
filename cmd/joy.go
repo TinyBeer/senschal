@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"seneschal/config"
 	"seneschal/tool"
@@ -10,16 +11,22 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const (
-	FlagGenDir      = "gen_dir"
-	FlagSettingFile = "setting_file"
+	FlagGenDir        = "gen_dir"
+	FlagGenDir_S      = "d"
+	FlagSettingFile   = "setting_file"
+	FlagSettingFile_S = "s"
+	FlagDirName       = "name"
+	FlagDirName_S     = "n"
 )
 
 func init() {
-	joyTplExecCmd.Flags().String(FlagGenDir, "", "set file generate dir")
-	joyTplExecCmd.Flags().String(FlagSettingFile, "", "set file where setting read from")
+	joyTplExecCmd.Flags().StringP(FlagGenDir, FlagGenDir_S, "", "set file generate dir")
+	joyTplExecCmd.Flags().StringP(FlagSettingFile, FlagSettingFile_S, "", "set file where setting read from")
+	joyTplExecCmd.Flags().StringP(FlagDirName, FlagDirName_S, "", "set dir name where files generate to")
 	joyTplCmd.AddCommand(joyTplExecCmd)
 	joyCmd.AddCommand(joyTplCmd)
 	joyInterCmd.Flags().Bool("lobby", false, "register lobby interface at same time")
@@ -178,54 +185,124 @@ var joyInterCmd = &cobra.Command{
 }
 
 var joyTplCmd = &cobra.Command{
-	Use:   "tpl [tpl_name] [flags]",
-	Short: "tpl tool",
+	Use:   "tpl",
+	Short: "list template",
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			dirList, err := file.ListDir(config.Tpl_Dir)
-			if err != nil {
-				log.Fatal(err)
-			}
-			data := [][]string{{"name"}}
-			for _, dir := range dirList {
-				data = append(data, []string{dir})
-			}
-			tool.ShowTable(data)
-			return
+		infoList, err := joyTplListTemplateInfo(config.Tpl_Dir)
+		if err != nil {
+			log.Fatal(err)
 		}
+		tool.ShowTableWithSlice(infoList)
 	},
+}
+
+type JoyTplTemplateInfo struct {
+	Alias string
+	Desc  string
+	Path  string
+}
+
+func joyTplListTemplateInfo(dir string) ([]*JoyTplTemplateInfo, error) {
+	dirList, err := file.ListDirName(dir)
+	if err != nil {
+		log.Fatal(err)
+	}
+	infoList := make([]*JoyTplTemplateInfo, 0, len(dirList))
+	for _, dir := range dirList {
+		info, err := joyTplGetTemplateInfo(filepath.Join(config.Tpl_Dir, dir))
+		if err != nil {
+			return nil, err
+		}
+		infoList = append(infoList, info)
+	}
+	return infoList, nil
+}
+
+func joyTplGetTemplateInfo(dir string) (*JoyTplTemplateInfo, error) {
+	settingPath := filepath.Join(dir, config.Tpl_Setting_Name+"."+file.Ext_TOML)
+	dirName := filepath.Base(dir)
+
+	info := &JoyTplTemplateInfo{
+		Alias: dirName,
+		Desc:  "missing",
+		Path:  dir,
+	}
+
+	_, err := os.Stat(settingPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Print(settingPath)
+			return info, nil
+		}
+		return nil, err
+	}
+	v := viper.New()
+	v.SetConfigName(filepath.Base(settingPath))
+	v.SetConfigType(file.Ext_TOML)
+	v.AddConfigPath(filepath.Dir(settingPath))
+	err = v.ReadInConfig()
+	if err != nil {
+		return nil, err
+	}
+	setting := v.AllSettings()
+
+	alias := setting["__alias__"].(string)
+	description := setting["__description__"].(string)
+	if alias == "" {
+		alias = dirName
+	}
+	info.Alias = alias
+	info.Desc = description
+	return info, nil
 }
 
 var joyTplExecCmd = &cobra.Command{
 	Use:   "exec <tpl_name> [flags]",
 	Short: "execute tpl to generate files",
-	Long:  "execute tpl to generate files\nNotice: setting file variable name should be lower case\nNotice: toml template is not support",
+	Long:  "execute tpl to generate files\nNotice: setting file variable name should be lower case",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
 			cmd.Usage()
 			return
 		}
 		tplName := args[0]
-		tplPath := filepath.Join(config.Tpl_Dir, tplName)
+		infoList, err := joyTplListTemplateInfo(config.Tpl_Dir)
+		if err != nil {
+			log.Fatal(err)
+		}
 		genDir, err := cmd.Flags().GetString(FlagGenDir)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if genDir == "" {
-			genDir = filepath.Join(config.Tpl_Gen_Dir, tplName)
-		}
-
 		settingFilePath, err := cmd.Flags().GetString(FlagSettingFile)
 		if err != nil {
 			log.Fatal(err)
 			return
 		}
-		if settingFilePath == "" {
-			settingFilePath = filepath.Join(config.Tpl_Dir, tplName, config.Tpl_Setting_Name+"."+file.Ext_TOML)
-		}
-		err = file.ExecuteTemplate(tplPath, genDir, settingFilePath)
+		dirName, err := cmd.Flags().GetString(FlagDirName)
 		if err != nil {
 			log.Fatal(err)
+			return
 		}
+		for _, info := range infoList {
+			if info.Alias == tplName {
+				tplPath := info.Path
+				if genDir == "" {
+					genDir = filepath.Join(config.Tpl_Gen_Dir, tplName)
+					if dirName != "" {
+						genDir = filepath.Join(config.Tpl_Gen_Dir, dirName)
+					}
+				}
+				if settingFilePath == "" {
+					settingFilePath = filepath.Join(tplPath, config.Tpl_Setting_Name+"."+file.Ext_TOML)
+				}
+				err = file.ExecuteTemplate(tplPath, genDir, settingFilePath)
+				if err != nil {
+					log.Fatal(err)
+				}
+				return
+			}
+		}
+		log.Printf("template[%s] not found", tplName)
 	},
 }
