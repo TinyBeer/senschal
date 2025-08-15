@@ -1,11 +1,9 @@
-package tool
+package img
 
 import (
 	"fmt"
 	"image"
 	"image/gif"
-	_ "image/jpeg"
-	_ "image/png"
 	"math"
 	"os"
 	"path/filepath"

@@ -1,4 +1,4 @@
-package tool
+package img
 
 import (
 	"image"
@@ -153,23 +153,3 @@ func ProcessGIF(inputPath, outputPath string) error {
 	// 编码并保存处理后的GIF
 	return gif.EncodeAll(outFile, gifImg)
 }
-
-// func main() {
-// 	if len(os.Args) != 2 {
-// 		println("用法: go run gif_edges.go <input.gif>")
-// 		println("处理后的文件将保存为 <input_edges.gif>")
-// 		os.Exit(1)
-// 	}
-
-// 	inputPath := os.Args[1]
-// 	ext := filepath.Ext(inputPath)
-// 	outputPath := inputPath[:len(inputPath)-len(ext)] + "_edges" + ext
-
-// 	err := processGIF(inputPath, outputPath)
-// 	if err != nil {
-// 		println("处理失败:", err.Error())
-// 		os.Exit(1)
-// 	}
-
-// 	println("处理完成，输出文件:", outputPath)
-// }

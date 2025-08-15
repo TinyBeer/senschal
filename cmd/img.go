@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"seneschal/tool"
+	"seneschal/tool/img"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -59,7 +60,7 @@ var img2TextCmd = &cobra.Command{
 
 		inputPath := args[0]
 
-		data, err := tool.ConvertImage2Text(inputPath, width, height, invert, colors)
+		data, err := img.ConvertImage2Text(inputPath, width, height, invert, colors)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -89,7 +90,7 @@ var imgEdgeEffectCmd = &cobra.Command{
 		ext := filepath.Ext(inputPath)
 		outputPath := inputPath[:len(inputPath)-len(ext)] + "_edges" + ext
 
-		err := tool.ProcessGIF(inputPath, outputPath)
+		err := img.ProcessGIF(inputPath, outputPath)
 		if err != nil {
 			fmt.Println("处理失败:", err.Error())
 			os.Exit(1)
