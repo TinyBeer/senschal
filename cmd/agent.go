@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"reflect"
@@ -24,20 +25,21 @@ func init() {
 var agentCmd = &cobra.Command{
 	Use:   "agent",
 	Short: "agent manager tool",
+	Example: "seneschal agent [list|cp|check|deploy]",
 }
 
 var agentListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "list agent",
-	Run: func(cmd *cobra.Command, args []string) {
+	Example: "seneschal agent list",
+	RunE: func(cmd *cobra.Command, args []string) error {
 		m, err := config.GetSSHConfigMap()
 		if err != nil {
-			fmt.Println(err)
-			return
+			return fmt.Errorf("failed to get ssh config: %w", err)
 		}
 		if len(m) == 0 {
-			fmt.Println("没有找到可用的配置")
-			return
+			log.Println("没有找到可用的配置")
+			return nil
 		}
 		var data [][]string
 		data = append(data, []string{"alias", "host", "user"})
@@ -45,6 +47,7 @@ var agentListCmd = &cobra.Command{
 			data = append(data, []string{k, v.SSH.Host, v.SSH.User})
 		}
 		util.ShowTable(data)
+		return nil
 	},
 }
 
@@ -53,17 +56,20 @@ var agentCpCmd = &cobra.Command{
 	Use:   "cp",
 	Short: "agent copy file",
 	Long:  "copy file between agent(not support fold yet)",
-	Run: func(cmd *cobra.Command, args []string) {
+	Example: "seneschal agent cp <src> <dst>",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
-			log.Println("请输入需要拷贝的文件以及要拷贝到的路径")
-			return
+			return errors.New("请指定源文件和目标路径")
 		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Printf("cp %s to %s\n", args[0], args[1])
 		err := runner.Copy(args[0], args[1])
 		if err != nil {
-			log.Println(err)
-			return
+			return fmt.Errorf("copy failed: %w", err)
 		}
+		return nil
 	},
 }
 
@@ -71,27 +77,27 @@ var agentCpCmd = &cobra.Command{
 var agentCheckCmd = &cobra.Command{
 	Use:   "check <alias1>[,alias2]... <env>",
 	Short: "check agent environment",
-	Run: func(cmd *cobra.Command, args []string) {
+	Example: "seneschal agent check <alias1,alias2> <env>",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
-			log.Println("请输入需要检查的 环境 和 机器别名")
-			return
+			return errors.New("请指定环境和机器别名")
 		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
 		ecm, err := config.GetEnvConfigMap()
 		if err != nil {
-			log.Println(err)
-			return
+			return fmt.Errorf("failed to get env config: %w", err)
 		}
 		scm, err := config.GetSSHConfigMap()
 		if err != nil {
-			log.Println(err)
-			return
+			return fmt.Errorf("failed to get ssh config: %w", err)
 		}
 
 		envAlias := args[1]
 		ec, find := ecm[envAlias]
 		if !find {
-			log.Printf("未找到环境[%s]的配置信息\n", envAlias)
-			return
+			return fmt.Errorf("未找到环境[%s]的配置信息", envAlias)
 		}
 		var envMgrList []envmgr.IEnvMgr
 		envMgrList = append(envMgrList, envmgr.NewEnvMgrDocker(ec))
@@ -106,7 +112,7 @@ var agentCheckCmd = &cobra.Command{
 			}
 		}
 		if missingCfg {
-			return
+			return errors.New("存在未找到的机器配置")
 		}
 
 		var data [][]string
@@ -118,11 +124,9 @@ var agentCheckCmd = &cobra.Command{
 		}
 		data = append(data, tblHead)
 		for _, alias := range sshAliasList {
-			// log.Printf("environment[%v] check machine[%v] start ...\n", envAlias, alias)
 			tblRow := []string{alias}
 			c := scm[alias]
 			for _, mgr := range envMgrList {
-				// log.Printf("environment manager[%v] checking ...\n", mgr.GetName())
 				res, err := mgr.Check(c)
 				if err != nil {
 					tblRow = append(tblRow, fmt.Sprintf("check environment with config[%v] failed, err:%v\n", c.SSH, err))
@@ -133,14 +137,14 @@ var agentCheckCmd = &cobra.Command{
 							tblRow = append(tblRow, fmt.Sprintf("%v", v.Field(i)))
 						}
 					} else {
-						log.Fatalf("failed to convert res[%v] to diagnosis", res)
-						return
+						return fmt.Errorf("failed to convert res[%v] to diagnosis", res)
 					}
 				}
 			}
 			data = append(data, tblRow)
 		}
 		util.ShowTable(data)
+		return nil
 	},
 }
 
@@ -148,28 +152,28 @@ var agentCheckCmd = &cobra.Command{
 var agentDeployCmd = &cobra.Command{
 	Use:   "deploy <alias1>[,alias2]... <env>",
 	Short: "deploy env on selected agent",
-	Run: func(cmd *cobra.Command, args []string) {
+	Example: "seneschal agent deploy <alias1,alias2> <env>",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
-			log.Println("请输入需要检查的 环境 和 机器别名")
-			return
+			return errors.New("请指定环境和机器别名")
 		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
 		ecm, err := config.GetEnvConfigMap()
 		if err != nil {
-			log.Println(err)
-			return
+			return fmt.Errorf("failed to get env config: %w", err)
 		}
 
 		scm, err := config.GetSSHConfigMap()
 		if err != nil {
-			log.Println(err)
-			return
+			return fmt.Errorf("failed to get ssh config: %w", err)
 		}
 
 		envAlias := args[1]
 		ec, find := ecm[envAlias]
 		if !find {
-			log.Printf("未找到环境[%s]的配置信息\n", envAlias)
-			return
+			return fmt.Errorf("未找到环境[%s]的配置信息", envAlias)
 		}
 		var envMgrList []envmgr.IEnvMgr
 		envMgrList = append(envMgrList, envmgr.NewEnvMgrDocker(ec))
@@ -184,7 +188,7 @@ var agentDeployCmd = &cobra.Command{
 			}
 		}
 		if missingCfg {
-			return
+			return errors.New("存在未找到的机器配置")
 		}
 		for _, alias := range sshAliasList {
 			c := scm[alias]
@@ -196,5 +200,6 @@ var agentDeployCmd = &cobra.Command{
 				}
 			}
 		}
+		return nil
 	},
 }

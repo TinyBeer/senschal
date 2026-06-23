@@ -10,10 +10,11 @@ import (
 )
 
 var testCmd = &cobra.Command{
-	Use:   "test",
-	Short: "测试",
-	Long:  "开发阶段用于测试命令",
-	Run: func(cmd *cobra.Command, args []string) {
+	Use:     "test",
+	Short:   "测试",
+	Long:    "开发阶段用于测试命令",
+	Example: "seneschal test",
+	RunE: func(cmd *cobra.Command, args []string) error {
 		r1 := component.NewRectangle(component.NewInlineTextWithStyle(6, "asdfghjkl", component.StyleFinish), true, component.StyleTodo)
 		r2 := component.NewRectangle(component.NewInlineTextWithStyle(6, "asdfghjkl", component.StyleWorking), true, component.StyleBreaking)
 		v := component.NewBox(component.Direction_H)
@@ -24,6 +25,7 @@ var testCmd = &cobra.Command{
 			fmt.Println(strings.Join(component.JoinStyleStringMatrix(v.GetCurrentContent(f)), "\n"))
 			time.Sleep(time.Second * 2)
 		}
+		return nil
 	}}
 
 func init() {

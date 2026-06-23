@@ -13,14 +13,14 @@ func init() {
 }
 
 var envCmd = &cobra.Command{
-	Use:   "env",
-	Short: "environment manage tool",
-	Long:  "list environment in config file",
-	Run: func(cmd *cobra.Command, args []string) {
+	Use:     "env",
+	Short:   "environment manage tool",
+	Long:    "list environment in config file",
+	Example: "seneschal env",
+	RunE: func(cmd *cobra.Command, args []string) error {
 		ecm, err := config.GetEnvConfigMap()
 		if err != nil {
-			fmt.Println(err)
-			return
+			return fmt.Errorf("failed to get env config: %w", err)
 		}
 
 		var data [][]string
@@ -36,5 +36,6 @@ var envCmd = &cobra.Command{
 			data = append(data, []string{alias, abstract})
 		}
 		util.ShowTable(data)
+		return nil
 	},
 }

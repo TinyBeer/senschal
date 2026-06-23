@@ -198,7 +198,7 @@ seneschal/
 │   └── file.go             # 文件保存工具
 ├── ui/
 │   ├── component/         # 终端 UI 组件库
-│   │   ├── containrer.go  # Box（水平/垂直布局）、InlineText、Rectangle 容器
+│   │   ├── container.go  # Box（水平/垂直布局）、InlineText、Rectangle 容器
 │   │   ├── style.go       # Lipgloss 样式预设
 │   │   ├── string_util.go # 支持中文的滑动窗口字符串显示
 │   │   └── string_util_test.go

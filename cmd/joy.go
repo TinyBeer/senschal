@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"log"
@@ -38,38 +39,42 @@ func init() {
 }
 
 var joyCmd = &cobra.Command{
-	Use:   "joy",
-	Short: "joynova project tool",
-	Run: func(cmd *cobra.Command, args []string) {
+	Use:     "joy",
+	Short:   "joynova project tool",
+	Example: "seneschal joy [-l]",
+	RunE: func(cmd *cobra.Command, args []string) error {
 		list, err := config.GetProjectConfigList(config.Project_Dir)
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to get project config: %w", err)
 		}
 		util.ShowTableWithSlice(list)
+		return nil
 	},
 }
 
 var joyInterCmd = &cobra.Command{
 	Use:   "inter <project> [flags] <service:api_name>",
 	Short: "register interface",
-	Run: func(cmd *cobra.Command, args []string) {
+	Example: "seneschal joy inter <project> [--lobby] <service:api_name>",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
-			cmd.Usage()
-			return
+			return errors.New("请指定 project 和 service:api_name")
 		}
+		if len(strings.Split(args[1], ":")) != 2 {
+			return errors.New("api_name 格式应为 service:api_name")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
 		projectName := args[0]
 		split := strings.Split(args[1], ":")
-		if len(split) != 2 {
-			cmd.Usage()
-			return
-		}
 		serivce := split[0]
 		apiName := split[1]
 
 		log.Printf("register %v %v interface %v", projectName, serivce, apiName)
 		list, err := config.GetProjectConfigList(config.Project_Dir)
 		if err != nil {
-			panic(err)
+			return fmt.Errorf("failed to get project config: %w", err)
 		}
 		var pc *config.ProjectConfig
 		for _, c := range list {
@@ -79,16 +84,15 @@ var joyInterCmd = &cobra.Command{
 			}
 		}
 		if pc == nil {
-			fmt.Printf("not found projcet[%v]\n", projectName)
-			return
+			return fmt.Errorf("not found project[%v]", projectName)
 		}
 		registerLobby, err := cmd.Flags().GetBool("lobby")
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to parse --lobby flag: %w", err)
 		}
 
 		if registerLobby && pc.LobbyRegisterWithTool && pc.LobbyRegisterFile == "" {
-			log.Fatal("no lobby register file config")
+			return errors.New("no lobby register file config")
 		}
 
 		apiReq := apiName + "Req"
@@ -97,7 +101,7 @@ var joyInterCmd = &cobra.Command{
 		if registerLobby {
 			fileList, err := file.ListFileWithExt(pc.GetProtoDir(), file.Ext_PROTO)
 			if err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("failed to list proto files: %w", err)
 			}
 			for _, f := range fileList {
 				if strings.Contains(filepath.Base(f), serivce) {
@@ -110,7 +114,7 @@ var joyInterCmd = &cobra.Command{
 		var targetServiceProtoFile string
 		fileList, err := file.ListFileWithExt(pc.GetServiceDir(), file.Ext_PROTO)
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to list service proto files: %w", err)
 		}
 		for _, f := range fileList {
 			if strings.Contains(filepath.Base(f), serivce) {
@@ -126,39 +130,39 @@ var joyInterCmd = &cobra.Command{
 		if registerLobby {
 			contain, err := file.FileContain(targetLobbyProtoFile, file.ReplaceProbe_Message.String())
 			if err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("failed to check lobby proto file: %w", err)
 			}
 			if !contain {
-				log.Fatalf("file[%s] not has probe[%s]", targetLobbyProtoFile, file.ReplaceProbe_Message.String())
+				return fmt.Errorf("file[%s] not has probe[%s]", targetLobbyProtoFile, file.ReplaceProbe_Message.String())
 			}
 		}
 
 		contain, err := file.FileContain(targetServiceProtoFile, file.ReplaceProbe_RPC.String())
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to check service proto file: %w", err)
 		}
 		if !contain {
-			log.Fatalf("file[%s] not has probe[%s]", targetServiceProtoFile, file.ReplaceProbe_RPC.String())
+			return fmt.Errorf("file[%s] not has probe[%s]", targetServiceProtoFile, file.ReplaceProbe_RPC.String())
 		}
 		if registerLobby && pc.LobbyRegisterWithTool {
 			contain, err = file.FileContain(pc.GetLobbyRegisterFile(), file.ReplaceProbe_Func.String())
 			if err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("failed to check lobby register file: %w", err)
 			}
 			if !contain {
-				log.Fatalf("file[%s] not has probe[%s]", pc.GetLobbyRegisterFile(), file.ReplaceProbe_Func.String())
+				return fmt.Errorf("file[%s] not has probe[%s]", pc.GetLobbyRegisterFile(), file.ReplaceProbe_Func.String())
 			}
 		}
 		if registerLobby {
 			err = file.InsertCodeIntoFile(targetLobbyProtoFile, file.ReplaceProbe_Message, file.GenerateMessage(apiReq), file.GenerateMessage(apiRes))
 			if err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("failed to insert code into lobby proto file: %w", err)
 			}
 		}
 
 		err = file.InsertCodeIntoFile(targetServiceProtoFile, file.ReplaceProbe_RPC, file.GenerateRPC(apiName, reqs, rets))
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to insert code into service proto file: %w", err)
 		}
 
 		var reqMessageOpt []file.ProtoMessageOpt
@@ -167,18 +171,18 @@ var joyInterCmd = &cobra.Command{
 			if pc.ServiceMessageTemplate != "" {
 				tpl, err := template.New("service_message_template").Parse(pc.ServiceMessageTemplate)
 				if err != nil {
-					log.Fatal(err)
+					return fmt.Errorf("failed to parse service message template: %w", err)
 				}
 				var buf bytes.Buffer
 				err = tpl.Execute(&buf, map[string]interface{}{
 					"api_name": apiName,
 				})
 				if err != nil {
-					log.Fatal(err)
+					return fmt.Errorf("failed to execute service message template: %w", err)
 				}
 				err = file.InsertCodeIntoFile(targetServiceProtoFile, file.ReplaceProbe_Message, buf.String())
 				if err != nil {
-					log.Fatal(err)
+					return fmt.Errorf("failed to insert message into service proto file: %w", err)
 				}
 			} else {
 				reqMessageOpt = append(reqMessageOpt, file.ProtoMessageWithField("greenly_proto_server.RpcRoleInfo", "Role"))
@@ -188,7 +192,7 @@ var joyInterCmd = &cobra.Command{
 				err = file.InsertCodeIntoFile(targetServiceProtoFile, file.ReplaceProbe_Message,
 					file.GenerateMessage(apiReq, reqMessageOpt...), file.GenerateMessage(apiRes, resMessageOpt...))
 				if err != nil {
-					log.Fatal(err)
+					return fmt.Errorf("failed to insert message into service proto file: %w", err)
 				}
 			}
 		}
@@ -196,22 +200,25 @@ var joyInterCmd = &cobra.Command{
 		if registerLobby && pc.LobbyRegisterWithTool {
 			err = file.InsertCodeIntoFile(pc.GetLobbyRegisterFile(), file.ReplaceProbe_Func, fmt.Sprintf("\tapi_%s.%s,", serivce, apiName))
 			if err != nil {
-				log.Fatal(err)
+				return fmt.Errorf("failed to insert code into lobby register file: %w", err)
 			}
 		}
 
+		return nil
 	},
 }
 
 var joyTplCmd = &cobra.Command{
-	Use:   "tpl",
-	Short: "list template",
-	Run: func(cmd *cobra.Command, args []string) {
+	Use:     "tpl",
+	Short:   "list template",
+	Example: "seneschal joy tpl",
+	RunE: func(cmd *cobra.Command, args []string) error {
 		infoList, err := joyTplListTemplateInfo(config.Tpl_Dir)
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to list templates: %w", err)
 		}
 		util.ShowTableWithSlice(infoList)
+		return nil
 	},
 }
 
@@ -224,7 +231,7 @@ type JoyTplTemplateInfo struct {
 func joyTplListTemplateInfo(dir string) ([]*JoyTplTemplateInfo, error) {
 	dirList, err := file.ListDirName(dir)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	infoList := make([]*JoyTplTemplateInfo, 0, len(dirList))
 	for _, dir := range dirList {
@@ -279,29 +286,30 @@ var joyTplExecCmd = &cobra.Command{
 	Use:   "exec <tpl_name> [flags]",
 	Short: "execute tpl to generate files",
 	Long:  "execute tpl to generate files\nNotice: setting file variable name should be lower case",
-	Run: func(cmd *cobra.Command, args []string) {
+	Example: "seneschal joy tpl exec <tpl_name> [-d gen_dir] [-s setting_file] [-n name]",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			cmd.Usage()
-			return
+			return errors.New("请指定模板名称")
 		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
 		tplName := args[0]
 		infoList, err := joyTplListTemplateInfo(config.Tpl_Dir)
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to list templates: %w", err)
 		}
 		genDir, err := cmd.Flags().GetString(FlagGenDir)
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to parse --gen-dir flag: %w", err)
 		}
 		settingFilePath, err := cmd.Flags().GetString(FlagSettingFile)
 		if err != nil {
-			log.Fatal(err)
-			return
+			return fmt.Errorf("failed to parse --setting-file flag: %w", err)
 		}
 		dirName, err := cmd.Flags().GetString(FlagDirName)
 		if err != nil {
-			log.Fatal(err)
-			return
+			return fmt.Errorf("failed to parse --name flag: %w", err)
 		}
 		for _, info := range infoList {
 			if info.Alias == tplName {
@@ -317,11 +325,11 @@ var joyTplExecCmd = &cobra.Command{
 				}
 				err = file.ExecuteTemplate(tplPath, genDir, settingFilePath)
 				if err != nil {
-					log.Fatal(err)
+					return fmt.Errorf("failed to execute template: %w", err)
 				}
-				return
+				return nil
 			}
 		}
-		log.Printf("template[%s] not found", tplName)
+		return fmt.Errorf("template[%s] not found", tplName)
 	},
 }

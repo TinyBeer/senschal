@@ -44,29 +44,6 @@ func (r *TodoFileRepo) AddTodo(ctx context.Context, todo *Todo) (string, error) 
 	return id, err
 }
 
-// CloseTodoByID implements TodoRepository.
-func (r *TodoFileRepo) CloseTodoByID(ctx context.Context, id string) error {
-	curUnix := time.Now().Unix()
-	store, err := r.getStore()
-	if err != nil {
-		return err
-	}
-	var todo *Todo
-	for _, t := range store.List {
-		if t.ID == id {
-			todo = t
-			break
-		}
-	}
-	if todo == nil {
-		return fmt.Errorf("todo with id[%s] not exist", id)
-	}
-	todo.UpdatedAt = curUnix
-	todo.Status = TodoStatus_Closed
-
-	bs, _ := json.Marshal(store)
-	return os.WriteFile(r.File, bs, 0644)
-}
 
 // CompleteByID implements TodoRepository.
 func (r *TodoFileRepo) CompleteByID(ctx context.Context, id string) error {

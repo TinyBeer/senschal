@@ -37,7 +37,7 @@ func NewProjectConfig() *ProjectConfig {
 func GetProjectConfigList(dir string) ([]*ProjectConfig, error) {
 	fileNameList, err := file.ListFileNameWithExt(Project_Dir, file.Ext_TOML)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	cl := make([]*ProjectConfig, 0, len(fileNameList))
 	for _, name := range fileNameList {

@@ -1,8 +1,8 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"seneschal/config"
@@ -25,24 +25,26 @@ var newWorkoutCmd = &cobra.Command{
 	Use:   "new <workout_name>",
 	Short: "creat a new workout",
 	Long:  `generate a new workout config file at workout config dir`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Example: "seneschal workout new <name>",
+	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			fmt.Println("Please enter a workout name!")
-			return
+			return errors.New("please enter a workout name")
 		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
 		workoutName := args[0]
-		// 打开 CSV 文件
-		file, err := os.OpenFile(filepath.Join(config.Workout_Dir, workoutName+"."+file.Ext_CSV), os.O_CREATE|os.O_WRONLY, os.ModePerm)
+		f, err := os.OpenFile(filepath.Join(config.Workout_Dir, workoutName+"."+file.Ext_CSV), os.O_CREATE|os.O_WRONLY, os.ModePerm)
 		if err != nil {
-			panic(err)
+			return fmt.Errorf("failed to create workout file: %w", err)
 		}
-		defer file.Close()
+		defer f.Close()
 
-		// 解析 CSV 到结构体切片
 		var itemList []*config.WorkoutItem
-		if err := gocsv.MarshalFile(&itemList, file); err != nil {
-			panic(err)
+		if err := gocsv.MarshalFile(&itemList, f); err != nil {
+			return fmt.Errorf("failed to write workout csv: %w", err)
 		}
+		return nil
 	},
 }
 
@@ -50,13 +52,14 @@ var workoutCmd = &cobra.Command{
 	Use:   "workout <workout_name>",
 	Short: "start a workout",
 	Long: `workout tool:
-workout workout_name: run workout
--l: list workout
-`,
-	Run: func(cmd *cobra.Command, args []string) {
+	workout workout_name: run workout
+	-l: list workout
+	`,
+	Example: "seneschal workout <workout_name> [-l]",
+	RunE: func(cmd *cobra.Command, args []string) error {
 		wcm, err := config.GetWorkoutConfigMap(config.Workout_Dir)
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to get workout config: %w", err)
 		}
 
 		wcList := make([]*config.WorkoutConfig, 0, len(wcm))
@@ -69,7 +72,7 @@ workout workout_name: run workout
 
 		list, err := cmd.Flags().GetBool("list")
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to parse --list flag: %w", err)
 		}
 		if list {
 			var data [][]string
@@ -78,17 +81,17 @@ workout workout_name: run workout
 				data = append(data, []string{wc.Name})
 			}
 			util.ShowTable(data)
-			return
+			return nil
 		}
 		var wc *config.WorkoutConfig
 		var has bool
 		if len(args) == 1 {
 			workoutName := args[0]
 			if wc, has = wcm[workoutName]; !has {
-				fmt.Println("Please enter a correct workout name!")
-				return
+				return fmt.Errorf("workout [%s] not found", workoutName)
 			}
 		}
 
 		terminal.Workout(wcList, wc)
+		return nil
 	}}
