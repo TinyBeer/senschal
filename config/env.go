@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"seneschal/tool/file"
+	"seneschal/internal/command/file"
 	"strings"
 
 	"github.com/spf13/viper"

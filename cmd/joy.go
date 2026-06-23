@@ -1,13 +1,15 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
 	"log"
 	"os"
 	"path/filepath"
 	"seneschal/config"
-	"seneschal/tool"
-	"seneschal/tool/file"
+	"seneschal/pkg/util"
+	"seneschal/internal/command/file"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -43,7 +45,7 @@ var joyCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
-		tool.ShowTableWithSlice(list)
+		util.ShowTableWithSlice(list)
 	},
 }
 
@@ -85,7 +87,7 @@ var joyInterCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		if registerLobby && pc.LobbyRegisterFile == "" {
+		if registerLobby && pc.LobbyRegisterWithTool && pc.LobbyRegisterFile == "" {
 			log.Fatal("no lobby register file config")
 		}
 
@@ -119,15 +121,6 @@ var joyInterCmd = &cobra.Command{
 		reqs := []string{apiReq}
 		rets := []string{apiRes}
 
-		var reqMessageOpt []file.ProtoMessageOpt
-		var resMessageOpt []file.ProtoMessageOpt
-		if registerLobby {
-			reqMessageOpt = append(reqMessageOpt, file.ProtoMessageWithField("greenly_proto_server.RpcRoleInfo", "Role"))
-			reqMessageOpt = append(reqMessageOpt, file.ProtoMessageWithField("greenly_proto_lobby."+apiReq, "Msg"))
-			resMessageOpt = append(resMessageOpt, file.ProtoMessageWithField("greenly_proto_error.ErrCode", "ErrCode"))
-			resMessageOpt = append(resMessageOpt, file.ProtoMessageWithField("greenly_proto_lobby."+apiRes, "Msg"))
-		}
-
 		log.Printf("lobby proto file: %s\nservice proto file: %s\nlobby register file: %s\n", targetLobbyProtoFile, targetServiceProtoFile, pc.GetLobbyRegisterFile())
 
 		if registerLobby {
@@ -147,7 +140,7 @@ var joyInterCmd = &cobra.Command{
 		if !contain {
 			log.Fatalf("file[%s] not has probe[%s]", targetServiceProtoFile, file.ReplaceProbe_RPC.String())
 		}
-		if registerLobby {
+		if registerLobby && pc.LobbyRegisterWithTool {
 			contain, err = file.FileContain(pc.GetLobbyRegisterFile(), file.ReplaceProbe_Func.String())
 			if err != nil {
 				log.Fatal(err)
@@ -168,10 +161,36 @@ var joyInterCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		err = file.InsertCodeIntoFile(targetServiceProtoFile, file.ReplaceProbe_Message,
-			file.GenerateMessage(apiReq, reqMessageOpt...), file.GenerateMessage(apiRes, resMessageOpt...))
-		if err != nil {
-			log.Fatal(err)
+		var reqMessageOpt []file.ProtoMessageOpt
+		var resMessageOpt []file.ProtoMessageOpt
+		if registerLobby {
+			if pc.ServiceMessageTemplate != "" {
+				tpl, err := template.New("service_message_template").Parse(pc.ServiceMessageTemplate)
+				if err != nil {
+					log.Fatal(err)
+				}
+				var buf bytes.Buffer
+				err = tpl.Execute(&buf, map[string]interface{}{
+					"api_name": apiName,
+				})
+				if err != nil {
+					log.Fatal(err)
+				}
+				err = file.InsertCodeIntoFile(targetServiceProtoFile, file.ReplaceProbe_Message, buf.String())
+				if err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				reqMessageOpt = append(reqMessageOpt, file.ProtoMessageWithField("greenly_proto_server.RpcRoleInfo", "Role"))
+				reqMessageOpt = append(reqMessageOpt, file.ProtoMessageWithField("greenly_proto_lobby."+apiReq, "Msg"))
+				resMessageOpt = append(resMessageOpt, file.ProtoMessageWithField("greenly_proto_error.ErrCode", "ErrCode"))
+				resMessageOpt = append(resMessageOpt, file.ProtoMessageWithField("greenly_proto_lobby."+apiRes, "Msg"))
+				err = file.InsertCodeIntoFile(targetServiceProtoFile, file.ReplaceProbe_Message,
+					file.GenerateMessage(apiReq, reqMessageOpt...), file.GenerateMessage(apiRes, resMessageOpt...))
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
 		}
 
 		if registerLobby && pc.LobbyRegisterWithTool {
@@ -192,7 +211,7 @@ var joyTplCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
-		tool.ShowTableWithSlice(infoList)
+		util.ShowTableWithSlice(infoList)
 	},
 }
 

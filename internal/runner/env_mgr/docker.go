@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"seneschal/config"
-	"seneschal/tool"
+	"seneschal/internal/runner"
 	"strconv"
 	"strings"
 )
@@ -46,7 +46,7 @@ func (e *EnvMgrDocker) Check(c *config.SSHConfig) (any, error) {
 	if e.cnf == nil {
 		return nil, nil
 	}
-	se, err := tool.NewSSHExecutor(c)
+	se, err := runner.NewSSHExecutor(c)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (e *EnvMgrDocker) Check(c *config.SSHConfig) (any, error) {
 	return checkDocker(se, e.cnf)
 }
 
-func checkDocker(e *tool.SSHExecutor, dc *config.Docker) (*DockerDiagnosis, error) {
+func checkDocker(e *runner.SSHExecutor, dc *config.Docker) (*DockerDiagnosis, error) {
 	res := new(DockerDiagnosis)
 	if dc != nil && dc.Enable {
 		output, err := e.ExecuteCommand("docker version --format '{{.Client.Version}}'")
@@ -169,7 +169,7 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 	if e.cnf == nil && !e.cnf.Enable {
 		return nil
 	}
-	se, err := tool.NewSSHExecutor(c)
+	se, err := runner.NewSSHExecutor(c)
 	if err != nil {
 		return err
 	}
@@ -197,7 +197,7 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 				log.Println("install docker with internet ok...")
 			} else {
 				// 1.2 try to install docker with deb
-				err = tool.Copy(config.DOCKER_DEB_DIR, c.Alias+":ops")
+				err = runner.Copy(config.DOCKER_DEB_DIR, c.Alias+":ops")
 				if err != nil {
 					return err
 				}
@@ -239,17 +239,17 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 		if len(diagnosis.MissingImageList) != 0 {
 			//  1.3 load images
 			log.Println("docker images loading ...")
-			err := tool.DockerLoadImageList(diagnosis.MissingImageList)
+			err := runner.DockerLoadImageList(diagnosis.MissingImageList)
 			if err != nil {
 				return err
 			}
 			for _, image := range diagnosis.MissingImageList {
-				err = tool.Copy(image.LocalFilePath(), c.Alias+":ops/docker_image/"+image.Name())
+				err = runner.Copy(image.LocalFilePath(), c.Alias+":ops/docker_image/"+image.Name())
 				if err != nil {
 					return err
 				}
 			}
-			err = tool.Copy(filepath.Join(config.DOCKER_IMAGE_DIR, "load.sh"), c.Alias+":ops/docker_image/load.sh")
+			err = runner.Copy(filepath.Join(config.DOCKER_IMAGE_DIR, "load.sh"), c.Alias+":ops/docker_image/load.sh")
 			if err != nil {
 				return err
 			}

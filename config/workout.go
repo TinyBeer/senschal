@@ -3,7 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
-	"seneschal/tool/file"
+	"seneschal/internal/command/file"
 
 	"github.com/gocarina/gocsv"
 )

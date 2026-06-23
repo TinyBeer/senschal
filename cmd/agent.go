@@ -5,8 +5,9 @@ import (
 	"log"
 	"reflect"
 	"seneschal/config"
-	"seneschal/tool"
-	envmgr "seneschal/tool/env_mgr"
+	"seneschal/internal/runner"
+	"seneschal/pkg/util"
+	envmgr "seneschal/internal/runner/env_mgr"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -43,7 +44,7 @@ var agentListCmd = &cobra.Command{
 		for k, v := range m {
 			data = append(data, []string{k, v.SSH.Host, v.SSH.User})
 		}
-		tool.ShowTable(data)
+		util.ShowTable(data)
 	},
 }
 
@@ -58,7 +59,7 @@ var agentCpCmd = &cobra.Command{
 			return
 		}
 		fmt.Printf("cp %s to %s\n", args[0], args[1])
-		err := tool.Copy(args[0], args[1])
+		err := runner.Copy(args[0], args[1])
 		if err != nil {
 			log.Println(err)
 			return
@@ -139,7 +140,7 @@ var agentCheckCmd = &cobra.Command{
 			}
 			data = append(data, tblRow)
 		}
-		tool.ShowTable(data)
+		util.ShowTable(data)
 	},
 }
 

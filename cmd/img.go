@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"seneschal/tool"
-	"seneschal/tool/img"
+	"seneschal/pkg/util"
+	"seneschal/internal/command/img"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -67,7 +67,7 @@ var img2TextCmd = &cobra.Command{
 		ext := filepath.Ext(inputPath)
 		outputPath := filepath.Join(strings.TrimSuffix(inputPath, ext) + ".json")
 		bs, _ := json.Marshal(data)
-		err = tool.SaveStringToFile(outputPath, string(bs))
+		err = util.SaveStringToFile(outputPath, string(bs))
 		if err != nil {
 			log.Fatal(err)
 		}

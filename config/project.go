@@ -2,19 +2,20 @@ package config
 
 import (
 	"path/filepath"
-	"seneschal/tool/file"
+	"seneschal/internal/command/file"
 	"sort"
 
 	"github.com/spf13/viper"
 )
 
 type ProjectConfig struct {
-	Alias                 string `mapstructure:"alias"`
-	ProjectDir            string `mapstructure:"project_dir"` // absolute path
-	ProtoDir              string `mapstructure:"proto_dir"`   // relative path
-	ServiceDir            string `mapstructure:"service_dir"` // relative path
-	LobbyRegisterWithTool bool   `mapstructure:"lobby_register_with_tool"`
-	LobbyRegisterFile     string `mapstructure:"lobby_register_file"` // relative path
+	Alias                  string `mapstructure:"alias"`
+	ProjectDir             string `mapstructure:"project_dir"` // absolute path
+	ProtoDir               string `mapstructure:"proto_dir"`   // relative path
+	ServiceDir             string `mapstructure:"service_dir"` // relative path
+	LobbyRegisterWithTool  bool   `mapstructure:"lobby_register_with_tool"`
+	LobbyRegisterFile      string `mapstructure:"lobby_register_file"` // relative path
+	ServiceMessageTemplate string `mapstructure:"service_message_template"`
 }
 
 func (c *ProjectConfig) GetProtoDir() string {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"seneschal/tool"
-	"seneschal/tool/todo"
+	"seneschal/pkg/util"
+	"seneschal/internal/command/todo"
 
 	"github.com/spf13/cobra"
 )
@@ -32,7 +32,7 @@ var todoCmd = &cobra.Command{
 			return
 		}
 
-		tool.ShowTableWithSlice(list)
+		util.ShowTableWithSlice(list)
 	},
 }
 

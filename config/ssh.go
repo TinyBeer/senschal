@@ -1,7 +1,7 @@
 package config
 
 import (
-	"seneschal/tool/file"
+	"seneschal/internal/command/file"
 
 	"github.com/spf13/viper"
 )

@@ -1,0 +1,178 @@
+# CLAUDE.md
+
+此文件为 Claude Code (claude.ai/code) 在操作此仓库时提供指引。
+
+## 项目概述
+
+Seneschal 是一个 Go CLI 工具，用于在云服务器/Linux 服务器上自动化环境部署。它管理 Docker 环境、protobuf 服务脚手架、基于 SSH 的文件传输、图片转 ASCII 艺术字，以及一个运动计时器 TUI。
+
+## 编码规范
+
+### 基础规范
+
+遵循通用Go编码规范，基于 spf13/cobra 开发命令行工具
+
+## 目录结构
+- cmd/：所有 cobra 命令定义（root.go、sub cmd 文件）
+- internal/command：命令业务实现
+- internal/runner：执行逻辑，与命令解耦
+- pkg/util：文件、网络、解析工具
+- config：命令行flag、配置文件解析
+
+## Cobra 编码规范
+1. rootCmd 统一初始化全局flag（verbose、config、output）
+2. 子命令拆分独立文件，单一命令一个文件
+3. flag 区分持久flag（全局）、本地flag（单命令）
+4. 添加命令示例 `cmd.Flags().Example = ""`
+5. 命令参数校验在 PreRunE，业务逻辑 RunE
+6. 所有错误在 RunE 返回，统一 cobra 错误打印
+
+## 输出规范
+1. 区分 stdout（正常输出json/table）、stderr（日志错误）
+2. 支持 --output json/table/yaml 多格式输出
+3. 静默模式 --quiet 关闭非必要打印
+4. 进度条、交互式输入封装工具包，不重复实现
+
+### 文件与IO
+1. 文件操作统一使用 os + afero 抽象，方便单元测试
+2. 文件读写携带上下文，处理权限、不存在异常
+3. 大文件流式读取，禁止一次性加载全量到内存
+
+### 跨平台兼容
+
+1. 路径处理使用 filepath 包，不硬编码 / 或 \
+2. 区分操作系统逻辑用 runtime.GOOS 判断，封装工具函数
+3. 编译支持 linux/windows/mac 多架构 Makefile
+
+## 构建与开发
+
+```bash
+# 编译
+go build -o seneschal .
+
+# 运行
+go run main.go [command]
+
+# 生成代码（stringer 枚举）
+go generate ./...
+
+# 运行测试
+go test ./...
+
+# 运行单个包测试
+go test ./ui/component/...
+
+# 整理依赖
+go mod tidy
+```
+
+## CLI 命令
+
+CLI 使用 `cobra` 构建。所有命令通过 `init()` 注册在 `cmd/` 中。
+
+| 命令                                     | 说明                                                                                       |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `seneschal`                              | 根命令 — 列出已注册命令                                                                    |
+| `seneschal joy`                          | Joynova 项目工具：列出项目、注册 protobuf 接口（`joy inter`）、从模板生成文件（`joy tpl`） |
+| `seneschal img text <file>`              | 图片转 ASCII 艺术字（参数：`-W` 宽度，`-H` 高度，`-V` 反转，`-C` ANSI 颜色）               |
+| `seneschal img edge <file.gif>`          | 对 GIF 应用 Sobel 边缘检测                                                                 |
+| `seneschal env`                          | 列出环境配置                                                                               |
+| `seneschal agent list`                   | 列出 SSH 代理（服务器）配置                                                                |
+| `seneschal agent cp <src> <dst>`         | 在代理间复制文件（本地或远程，支持 `alias:path` 语法）                                     |
+| `seneschal agent check <aliases> <env>`  | 检查远程代理的环境状态                                                                     |
+| `seneschal agent deploy <aliases> <env>` | 部署环境（Docker）到远程代理                                                               |
+| `seneschal todo [add/done/del]`          | Todo 列表管理器，JSON 文件持久化                                                           |
+| `seneschal workout [-l] [name]`          | 使用 Bubble Tea TUI 的运动计时器，CSV 配置运动计划                                         |
+
+## 项目结构
+
+```
+seneschal/
+├── main.go                # 入口，调用 cmd.Execut()
+├── cmd/                   # Cobra 命令定义
+│   ├── root.go            # 根命令
+│   ├── joy.go             # Joynova 项目与模板工具
+│   ├── img.go             # 图片处理（ASCII 艺术字、边缘检测）
+│   ├── env.go             # 环境列表
+│   ├── agent.go           # SSH 代理管理、检查、部署
+│   ├── todo.go            # Todo CRUD 命令
+│   ├── workout.go         # 运动命令
+│   └── test.go            # 开发测试沙盒
+├── config/                # 配置类型与加载器
+│   ├── const.go           # 目录路径常量（data/conf/、data/tpl/ 等）
+│   ├── env.go             # 环境配置、Docker 配置（版本、镜像、用户组）
+│   ├── project.go         # 项目配置（proto 目录、服务目录、lobby 注册）
+│   ├── ssh.go             # SSH 配置（密码/密钥认证、主机、端口）
+│   ├── workout.go         # 从 CSV 读取的运动配置（时长/计数/休息项）
+│   └── workouttype_string.go  # 自动生成的 stringer
+├── internal/
+│   ├── runner/             # 执行逻辑，与命令解耦
+│   │   ├── exec.go         # 通过 os/exec 执行本地命令
+│   │   ├── ssh.go          # SSH 客户端、会话管理、断点续传
+│   │   ├── file.go         # 统一的本地/远程 Path 与 File 抽象
+│   │   ├── file_op.go      # 通过 SSH 在本地<->远程之间复制文件/目录
+│   │   ├── docker.go       # Docker 镜像拉取、保存与加载编排
+│   │   └── env_mgr/        # 环境管理器接口与实现
+│   │       ├── common.go   # IEnvMgr 接口（Check、Deploy）
+│   │       └── docker.go   # 在 SSH 代理上检查/部署 Docker
+│   └── command/            # 命令业务实现
+│       ├── file/           # 文件子操作（模板、proto 代码注入）
+│       │   ├── const.go    # 文件扩展名、ReplaceProbe 枚举
+│       │   ├── list.go     # 遍历目录、按扩展名列出文件
+│       │   ├── read.go     # 检查文件是否包含指定字符串
+│       │   ├── write.go    # 在探针标记处向文件插入代码
+│       │   ├── proto.go    # 解析 .proto 文件、生成 message 与 RPC
+│       │   └── tpl.go      # 使用 TOML 设置的 Go 模板执行
+│       ├── img/            # 图片处理
+│       │   ├── text.go     # 图片转 ASCII（可配置字符集、颜色）
+│       │   └── edge.go     # GIF 帧的 Sobel 边缘检测
+│       └── todo/           # Todo 领域对象与 JSON 文件仓库
+│           ├── model.go    # Todo 结构体与状态枚举
+│           ├── domain.go   # TodoRepository 接口、单例获取
+│           └── repository.go # TodoFileRepo（JSON CRUD）
+├── pkg/util/               # 工具函数
+│   ├── table.go            # 支持 markdown 的 CLI 表格渲染
+│   └── file.go             # 文件保存工具
+├── ui/
+│   ├── component/         # 终端 UI 组件库
+│   │   ├── containrer.go  # Box（水平/垂直布局）、InlineText、Rectangle 容器
+│   │   ├── style.go       # Lipgloss 样式预设
+│   │   ├── string_util.go # 支持中文的滑动窗口字符串显示
+│   │   └── string_util_test.go
+│   └── terminal/
+│       └── workout.go     # 基于 Bubble Tea 的运动计时器 TUI
+└── data/                  # 运行时数据（配置、模板、镜像...）
+    ├── conf/              # TOML 配置（env/、project/、ssh/、workout/）
+    ├── tpl/               # Go 模板目录（含 setting.toml）
+    ├── _gen/              # 模板执行生成的输出
+    ├── docker_image/      # 保存的 Docker 镜像（.tar）
+    └── docker_deb/        # 用于离线安装的 Docker .deb 包
+```
+
+## 关键设计模式
+
+### 配置加载
+
+所有配置类型（SSH、Env、Project）遵循相同模式：TOML 文件存放在 `data/conf/` 子目录中，通过 `viper` 加载，使用 `file.ListFileNameWithExt()` + `read*FromToml()` 函数，返回以别名为键的 map。
+
+### 统一的本地/远程路径
+
+`internal/runner.Path` 和 `internal/runner.File` 通过 `alias:path` 地址方案（例如 `myserver:/tmp/file.txt`）支持无缝的本地和 SSH 远程操作。SSH 配置在运行时根据别名查找 — 参见 `internal/runner/file.go`、`internal/runner/file_op.go`、`internal/runner/ssh.go`。
+
+### 通过探针标记进行代码注入
+
+`internal/command/file` 包支持将生成的 protobuf message/RPC 定义插入到现有的 `.proto` 文件中。文件必须包含 `//rpc place`、`//message place` 或 `//func place` 探针标记。参见 `internal/command/file/write.go` 和 `cmd/joy.go`。
+
+### 环境管理器接口
+
+`internal/runner/env_mgr/common.go` 中的 `IEnvMgr` 定义了 `Check()` 和 `Deploy()` 方法。目前仅实现了 `EnvMgrDocker`，它安装 Docker（通过网络或 .deb）、配置用户组并加载所需的 Docker 镜像。
+
+### 模板引擎
+
+模板使用 Go 的 `text/template`，设置来自 `setting.toml` 文件。模板位于 `data/tpl/<name>/template/` 并生成到 `data/_gen/<name>/`。参见 `internal/command/file/tpl.go` 和 `cmd/joy.go` 中的 `joy tpl exec`。
+
+## 数据约定
+
+- **配置格式**：SSH/project/env 配置使用 TOML；运动计划使用 CSV；Todo 持久化使用 JSON
+- **配置目录**：`data/conf/<type>/`，其中 type 为 `env`、`project`、`ssh`、`workout`
+- **远程路径格式**：`ssh_alias:/path/to/file` — `runner.NewPath()` 和 `runner.NewFile()` 解析此格式

@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"seneschal/config"
-	"seneschal/tool"
-	"seneschal/tool/file"
+	"seneschal/pkg/util"
+	"seneschal/internal/command/file"
 	"seneschal/ui/terminal"
 	"sort"
 
@@ -77,7 +77,7 @@ workout workout_name: run workout
 			for _, wc := range wcList {
 				data = append(data, []string{wc.Name})
 			}
-			tool.ShowTable(data)
+			util.ShowTable(data)
 			return
 		}
 		var wc *config.WorkoutConfig

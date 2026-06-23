@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"seneschal/config"
-	"seneschal/tool"
+	"seneschal/pkg/util"
 
 	"github.com/spf13/cobra"
 )
@@ -35,6 +35,6 @@ var envCmd = &cobra.Command{
 			}
 			data = append(data, []string{alias, abstract})
 		}
-		tool.ShowTable(data)
+		util.ShowTable(data)
 	},
 }
