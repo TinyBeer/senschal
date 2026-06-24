@@ -17,7 +17,7 @@ TOOL_LIST := \
 .PHONY: tools
 tools:
 # 	@echo "=== 开始安装依赖工具 ==="
-	$(foreach tool,$(TOOLS),$(GO_INSTALL) $(tool);)
+	$(foreach tool,$(TOOL_LIST),$(GO_INSTALL) $(tool);)
 # 	@echo "=== 依赖工具安装完成 ==="
 
 .PHONY: gen
