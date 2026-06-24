@@ -1,5 +1,5 @@
 APP_NAME = seneschal
-BUILD_DIR = data/build
+BUILD_DIR = data/_gen
 
 # Go 基础环境配置
 GO := go
