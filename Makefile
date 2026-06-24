@@ -1,24 +1,33 @@
 APP_NAME = seneschal
-BUILD_DIR = build
+BUILD_DIR = data/build
+
+# Go 基础环境配置
+GO := go
+GO_MOD := $(GO) mod
+GO_INSTALL := $(GO) install
+GO_GENERATE := $(GO) generate
+
+# 工具定义：path@version
+TOOL_LIST := \
+	golang.org/x/tools/cmd/stringer@v0.35.0
 
 .PHONY: gen build build-all clean
 
-gen:
+# 安装所有依赖插件
+.PHONY: tools
+tools:
+# 	@echo "=== 开始安装依赖工具 ==="
+	$(foreach tool,$(TOOLS),$(GO_INSTALL) $(tool);)
+# 	@echo "=== 依赖工具安装完成 ==="
+
+.PHONY: gen
+gen: tools
 	@go generate ./...
 
+# 编译项目
+.PHONY: build
 build: gen
 	@go build -o $(BUILD_DIR)/$(APP_NAME) .
-
-build-linux: gen
-	@GOOS=linux GOARCH=amd64 go build -o $(BUILD_DIR)/$(APP_NAME)-linux-amd64 .
-
-build-darwin: gen
-	@GOOS=darwin GOARCH=amd64 go build -o $(BUILD_DIR)/$(APP_NAME)-darwin-amd64 .
-
-build-windows: gen
-	@GOOS=windows GOARCH=amd64 go build -o $(BUILD_DIR)/$(APP_NAME)-windows-amd64.exe .
-
-build-all: build-linux build-darwin build-windows
 
 clean:
 	@rm -rf $(BUILD_DIR)
