@@ -55,11 +55,9 @@ var joyCmd = &cobra.Command{
 var joyInterCmd = &cobra.Command{
 	Use:   "inter <project> [flags] <service:api_name>",
 	Short: "register interface",
+	Args: cobra.ExactArgs(2),
 	Example: "seneschal joy inter <project> [--lobby] <service:api_name>",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 2 {
-			return errors.New("请指定 project 和 service:api_name")
-		}
 		if len(strings.Split(args[1], ":")) != 2 {
 			return errors.New("api_name 格式应为 service:api_name")
 		}
@@ -86,7 +84,7 @@ var joyInterCmd = &cobra.Command{
 		if pc == nil {
 			return fmt.Errorf("not found project[%v]", projectName)
 		}
-		registerLobby, err := cmd.Flags().GetBool("lobby")
+		registerLobby, err := getBoolFlag(cmd, "lobby")
 		if err != nil {
 			return fmt.Errorf("failed to parse --lobby flag: %w", err)
 		}
@@ -285,6 +283,7 @@ func joyTplGetTemplateInfo(dir string) (*JoyTplTemplateInfo, error) {
 var joyTplExecCmd = &cobra.Command{
 	Use:   "exec <tpl_name> [flags]",
 	Short: "execute tpl to generate files",
+		Args: cobra.ExactArgs(1),
 	Long:  "execute tpl to generate files\nNotice: setting file variable name should be lower case",
 	Example: "seneschal joy tpl exec <tpl_name> [-d gen_dir] [-s setting_file] [-n name]",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
@@ -299,15 +298,15 @@ var joyTplExecCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to list templates: %w", err)
 		}
-		genDir, err := cmd.Flags().GetString(FlagGenDir)
+		genDir, err := getStringFlag(cmd, FlagGenDir)
 		if err != nil {
 			return fmt.Errorf("failed to parse --gen-dir flag: %w", err)
 		}
-		settingFilePath, err := cmd.Flags().GetString(FlagSettingFile)
+		settingFilePath, err := getStringFlag(cmd, FlagSettingFile)
 		if err != nil {
 			return fmt.Errorf("failed to parse --setting-file flag: %w", err)
 		}
-		dirName, err := cmd.Flags().GetString(FlagDirName)
+		dirName, err := getStringFlag(cmd, FlagDirName)
 		if err != nil {
 			return fmt.Errorf("failed to parse --name flag: %w", err)
 		}

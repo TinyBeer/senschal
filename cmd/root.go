@@ -40,3 +40,30 @@ func init() {
 func Execut() error {
 	return rootCmd.Execute()
 }
+
+// getBoolFlag is a helper to parse a bool flag and wrap the error.
+func getBoolFlag(cmd *cobra.Command, name string) (bool, error) {
+	v, err := cmd.Flags().GetBool(name)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse --%s flag: %w", name, err)
+	}
+	return v, nil
+}
+
+// getIntFlag is a helper to parse an int flag and wrap the error.
+func getIntFlag(cmd *cobra.Command, name string) (int, error) {
+	v, err := cmd.Flags().GetInt(name)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse --%s flag: %w", name, err)
+	}
+	return v, nil
+}
+
+// getStringFlag is a helper to parse a string flag and wrap the error.
+func getStringFlag(cmd *cobra.Command, name string) (string, error) {
+	v, err := cmd.Flags().GetString(name)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse --%s flag: %w", name, err)
+	}
+	return v, nil
+}

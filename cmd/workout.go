@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,12 +25,7 @@ var newWorkoutCmd = &cobra.Command{
 	Short: "creat a new workout",
 	Long:  `generate a new workout config file at workout config dir`,
 	Example: "seneschal workout new <name>",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return errors.New("please enter a workout name")
-		}
-		return nil
-	},
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		workoutName := args[0]
 		f, err := os.OpenFile(filepath.Join(config.Workout_Dir, workoutName+"."+file.Ext_CSV), os.O_CREATE|os.O_WRONLY, os.ModePerm)
@@ -54,7 +48,7 @@ var workoutCmd = &cobra.Command{
 	Long: `workout tool:
 	workout workout_name: run workout
 	-l: list workout
-	`,
+`,
 	Example: "seneschal workout <workout_name> [-l]",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		wcm, err := config.GetWorkoutConfigMap(config.Workout_Dir)

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"path/filepath"
 	"seneschal/pkg/util"
@@ -38,26 +37,21 @@ var img2TextCmd = &cobra.Command{
 	Short:   "text effect",
 	Long:    "用法: img text <input.ext>\n处理后的文件将保存为 <input_file_name.json>",
 	Example: "seneschal img text <input.ext>",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return errors.New("请指定输入图片路径")
-		}
-		return nil
-	},
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		width, err := cmd.Flags().GetInt("width")
+		width, err := getIntFlag(cmd, "width")
 		if err != nil {
-			return fmt.Errorf("failed to parse --width flag: %w", err)
+			return err
 		}
-		height, err := cmd.Flags().GetInt("height")
+		height, err := getIntFlag(cmd, "height")
 		if err != nil {
 			return fmt.Errorf("failed to parse --height flag: %w", err)
 		}
-		invert, err := cmd.Flags().GetBool("invert")
+		invert, err := getBoolFlag(cmd, "invert")
 		if err != nil {
 			return fmt.Errorf("failed to parse --invert flag: %w", err)
 		}
-		colors, err := cmd.Flags().GetBool("colors")
+		colors, err := getBoolFlag(cmd, "colors")
 		if err != nil {
 			return fmt.Errorf("failed to parse --colors flag: %w", err)
 		}
@@ -86,12 +80,7 @@ var imgEdgeEffectCmd = &cobra.Command{
 	Short:   "edge effect",
 	Long:    "用法: img edge <input.gif>\n处理后的文件将保存为 <input_edges.gif>",
 	Example: "seneschal img edge <input.gif>",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return errors.New("请指定输入 GIF 路径")
-		}
-		return nil
-	},
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		inputPath := args[0]
 		ext := filepath.Ext(inputPath)

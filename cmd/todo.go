@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"seneschal/pkg/util"
@@ -43,12 +42,7 @@ var todoAddCmd = &cobra.Command{
 	Use:   "add content",
 	Short: "add new todo",
 	Example: "seneschal todo add <content>",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return errors.New("请指定 todo 内容")
-		}
-		return nil
-	},
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		content := args[0]
 		repo := todo.GetRepo()
@@ -66,12 +60,7 @@ var todoDoneCmd = &cobra.Command{
 	Use:   "done id",
 	Short: "complete a todo",
 	Example: "seneschal todo done <id>",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return errors.New("请指定 todo ID")
-		}
-		return nil
-	},
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		repo := todo.GetRepo()
@@ -89,12 +78,7 @@ var todoDelCmd = &cobra.Command{
 	Use:   "del id",
 	Short: "delete a todo",
 	Example: "seneschal todo del <id>",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return errors.New("请指定 todo ID")
-		}
-		return nil
-	},
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		repo := todo.GetRepo()

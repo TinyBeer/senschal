@@ -38,7 +38,7 @@ var agentListCmd = &cobra.Command{
 			return fmt.Errorf("failed to get ssh config: %w", err)
 		}
 		if len(m) == 0 {
-			log.Println("没有找到可用的配置")
+			fmt.Println("没有找到可用的配置")
 			return nil
 		}
 		var data [][]string
@@ -57,12 +57,7 @@ var agentCpCmd = &cobra.Command{
 	Short: "agent copy file",
 	Long:  "copy file between agent(not support fold yet)",
 	Example: "seneschal agent cp <src> <dst>",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 2 {
-			return errors.New("请指定源文件和目标路径")
-		}
-		return nil
-	},
+	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Printf("cp %s to %s\n", args[0], args[1])
 		err := runner.Copy(args[0], args[1])
@@ -78,12 +73,7 @@ var agentCheckCmd = &cobra.Command{
 	Use:   "check <alias1>[,alias2]... <env>",
 	Short: "check agent environment",
 	Example: "seneschal agent check <alias1,alias2> <env>",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 2 {
-			return errors.New("请指定环境和机器别名")
-		}
-		return nil
-	},
+	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ecm, err := config.GetEnvConfigMap()
 		if err != nil {
@@ -153,12 +143,7 @@ var agentDeployCmd = &cobra.Command{
 	Use:   "deploy <alias1>[,alias2]... <env>",
 	Short: "deploy env on selected agent",
 	Example: "seneschal agent deploy <alias1,alias2> <env>",
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 2 {
-			return errors.New("请指定环境和机器别名")
-		}
-		return nil
-	},
+	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ecm, err := config.GetEnvConfigMap()
 		if err != nil {
