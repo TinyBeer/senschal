@@ -7,9 +7,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"seneschal/config"
 	"strconv"
 	"strings"
+
+	"seneschal/config"
 )
 
 type Remote struct {
@@ -324,7 +325,6 @@ func NewFile(filePath string) (*File, error) {
 		Remote: nil,
 		Path:   filePath,
 	}, nil
-
 }
 
 // GetReader implements IFile.

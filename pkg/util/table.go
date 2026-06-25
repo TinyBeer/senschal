@@ -11,9 +11,7 @@ import (
 	"github.com/olekukonko/tablewriter/renderer"
 )
 
-var (
-	Err_InvalidDataType = errors.New("invalid data type")
-)
+var Err_InvalidDataType = errors.New("invalid data type")
 
 func ShowTableWithSlice(data any) {
 	dt := reflect.TypeOf(data)
@@ -52,7 +50,8 @@ func ShowTableWithSlice(data any) {
 }
 
 func ShowTable(data [][]string) {
-	table := tablewriter.NewTable(os.Stdout,
+	table := tablewriter.NewTable(
+		os.Stdout,
 		tablewriter.WithRenderer(renderer.NewMarkdown()),
 	)
 	sort.Slice(data[1:], func(i, j int) bool {

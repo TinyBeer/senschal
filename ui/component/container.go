@@ -134,7 +134,6 @@ func NewInlineText(w int, content string) *InlineText {
 		content: content,
 		width:   w,
 	}
-
 }
 
 func NewInlineTextWithStyle(w int, content string, style lipgloss.Style) *InlineText {
@@ -143,7 +142,6 @@ func NewInlineTextWithStyle(w int, content string, style lipgloss.Style) *Inline
 		width:   w,
 		style:   style,
 	}
-
 }
 
 // GetHeight implements Container.

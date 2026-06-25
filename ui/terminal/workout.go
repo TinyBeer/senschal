@@ -7,10 +7,11 @@ package terminal
 import (
 	"fmt"
 	"os"
-	"seneschal/config"
-	"seneschal/ui/component"
 	"strings"
 	"time"
+
+	"seneschal/config"
+	"seneschal/ui/component"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -245,7 +246,6 @@ func (m model) workoutListInfo() string {
 		} else {
 			workoutContainer.AddSub(component.NewInlineText(10, wc.Name))
 		}
-
 	}
 
 	itemContainre := component.NewBox(component.Direction_V)
@@ -278,7 +278,6 @@ func (m model) workoutListInfo() string {
 			itemInfo.AddSub(component.NewInlineTextWithStyle(16, "Repeat: "+repeatInfo, style))
 			itemContainre.AddSub(itemInfo)
 		}
-
 	}
 
 	v := component.NewBox(component.Direction_H)

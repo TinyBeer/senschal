@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"seneschal/config"
-	"seneschal/pkg/util"
-	"seneschal/internal/command/file"
-	"seneschal/ui/terminal"
 	"sort"
+
+	"seneschal/config"
+	"seneschal/internal/command/file"
+	"seneschal/pkg/util"
+	"seneschal/ui/terminal"
 
 	"github.com/gocarina/gocsv"
 	"github.com/spf13/cobra"
@@ -21,11 +22,11 @@ func init() {
 }
 
 var newWorkoutCmd = &cobra.Command{
-	Use:   "new <workout_name>",
-	Short: "creat a new workout",
-	Long:  `generate a new workout config file at workout config dir`,
+	Use:     "new <workout_name>",
+	Short:   "creat a new workout",
+	Long:    `generate a new workout config file at workout config dir`,
 	Example: "seneschal workout new <name>",
-	Args: cobra.ExactArgs(1),
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		workoutName := args[0]
 		f, err := os.OpenFile(filepath.Join(config.Workout_Dir, workoutName+"."+file.Ext_CSV), os.O_CREATE|os.O_WRONLY, os.ModePerm)
@@ -88,4 +89,5 @@ var workoutCmd = &cobra.Command{
 
 		terminal.Workout(wcList, wc)
 		return nil
-	}}
+	},
+}

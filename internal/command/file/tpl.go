@@ -11,7 +11,7 @@ import (
 
 const tplTemplateDirName = "template"
 
-func ExecuteTemplate(tplPath string, genDir string, settingPath string) error {
+func ExecuteTemplate(tplPath, genDir, settingPath string) error {
 	tplInfo, err := os.Stat(tplPath)
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func ExecuteTemplate(tplPath string, genDir string, settingPath string) error {
 	}
 
 	// 创建输出目录
-	err = os.MkdirAll(genDir, 0755)
+	err = os.MkdirAll(genDir, 0o755)
 	if err != nil {
 		return err
 	}
@@ -92,11 +92,11 @@ func ExecuteTemplate(tplPath string, genDir string, settingPath string) error {
 		}
 
 		genPath := filepath.Join(genDir, relPath)
-		if err := os.MkdirAll(filepath.Dir(genPath), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(genPath), 0o755); err != nil {
 			return err
 		}
 
-		f, err := os.OpenFile(genPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+		f, err := os.OpenFile(genPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
 		if err != nil {
 			return err
 		}
@@ -110,7 +110,7 @@ func ExecuteTemplate(tplPath string, genDir string, settingPath string) error {
 
 	// 创建空目录
 	for _, dir := range emptyDirs {
-		if err := os.MkdirAll(filepath.Join(genDir, dir), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(genDir, dir), 0o755); err != nil {
 			return err
 		}
 	}

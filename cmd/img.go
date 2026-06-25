@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
-	"seneschal/pkg/util"
-	"seneschal/internal/command/img"
 	"strings"
+
+	"seneschal/internal/command/img"
+	"seneschal/pkg/util"
 
 	"github.com/spf13/cobra"
 )
@@ -37,7 +38,7 @@ var img2TextCmd = &cobra.Command{
 	Short:   "text effect",
 	Long:    "用法: img text <input.ext>\n处理后的文件将保存为 <input_file_name.json>",
 	Example: "seneschal img text <input.ext>",
-	Args: cobra.ExactArgs(1),
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		width, err := getIntFlag(cmd, "width")
 		if err != nil {
@@ -80,7 +81,7 @@ var imgEdgeEffectCmd = &cobra.Command{
 	Short:   "edge effect",
 	Long:    "用法: img edge <input.gif>\n处理后的文件将保存为 <input_edges.gif>",
 	Example: "seneschal img edge <input.gif>",
-	Args: cobra.ExactArgs(1),
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		inputPath := args[0]
 		ext := filepath.Ext(inputPath)

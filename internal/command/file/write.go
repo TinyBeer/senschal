@@ -27,5 +27,5 @@ func InsertCodeIntoFile(filePath string, probe ReplaceProbe, codes ...string) er
 	}
 	newContent := bytes.Replace(content, old, new, 1)
 
-	return os.WriteFile(filePath, newContent, 0644)
+	return os.WriteFile(filePath, newContent, 0o644)
 }

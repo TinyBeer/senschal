@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"seneschal/ui/component"
 	"strings"
 	"time"
+
+	"seneschal/ui/component"
 
 	"github.com/spf13/cobra"
 )
@@ -26,7 +27,8 @@ var testCmd = &cobra.Command{
 			time.Sleep(time.Second * 2)
 		}
 		return nil
-	}}
+	},
+}
 
 func init() {
 	rootCmd.AddCommand(testCmd)

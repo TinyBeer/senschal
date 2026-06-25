@@ -14,7 +14,7 @@ const (
 type ReplaceProbe int
 
 const (
-	ReplaceProbe_RPC     ReplaceProbe = iota //rpc place
-	ReplaceProbe_Message                     //message place
-	ReplaceProbe_Func                        //func place
+	ReplaceProbe_RPC     ReplaceProbe = iota // rpc place
+	ReplaceProbe_Message                     // message place
+	ReplaceProbe_Func                        // func place
 )

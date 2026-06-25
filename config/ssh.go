@@ -28,7 +28,6 @@ type SSH struct {
 
 func NewSSHConfig() *SSHConfig {
 	return new(SSHConfig)
-
 }
 
 func readSSHConfigFromToml(dir, name string) (*SSHConfig, error) {

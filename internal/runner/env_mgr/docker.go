@@ -6,10 +6,11 @@ import (
 	"log"
 	"path/filepath"
 	"reflect"
-	"seneschal/config"
-	"seneschal/internal/runner"
 	"strconv"
 	"strings"
+
+	"seneschal/config"
+	"seneschal/internal/runner"
 )
 
 type EnvMgrDocker struct {

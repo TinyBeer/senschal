@@ -2,8 +2,9 @@ package config
 
 import (
 	"path/filepath"
-	"seneschal/internal/command/file"
 	"sort"
+
+	"seneschal/internal/command/file"
 
 	"github.com/spf13/viper"
 )

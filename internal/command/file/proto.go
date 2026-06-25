@@ -34,7 +34,7 @@ func GenerateMessage(name string, fields ...ProtoMessageOpt) string {
 	return fmt.Sprintf("message %s{\n%s\n}\n", name, strings.Join(filedList, "\n"))
 }
 
-func GenerateRPC(name string, reqs []string, rets []string) string {
+func GenerateRPC(name string, reqs, rets []string) string {
 	return fmt.Sprintf("\trpc %s(%s) returns(%s){};", name, strings.Join(reqs, ","), strings.Join(rets, ","))
 }
 

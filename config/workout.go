@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+
 	"seneschal/internal/command/file"
 
 	"github.com/gocarina/gocsv"
@@ -33,7 +34,6 @@ type WorkoutItem struct {
 
 func NewWorkoutConfig() *WorkoutConfig {
 	return new(WorkoutConfig)
-
 }
 
 func GetWorkoutConfigMap(dir string) (map[string]*WorkoutConfig, error) {

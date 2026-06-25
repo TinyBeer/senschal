@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func ListFileWithExt(dir string, ext string) ([]string, error) {
+func ListFileWithExt(dir, ext string) ([]string, error) {
 	var files []string
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() && filepath.Ext(info.Name()) == "."+ext {
@@ -20,7 +20,7 @@ func ListFileWithExt(dir string, ext string) ([]string, error) {
 	return files, nil
 }
 
-func ListFileNameWithExt(dir string, ext string) ([]string, error) {
+func ListFileNameWithExt(dir, ext string) ([]string, error) {
 	var files []string
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

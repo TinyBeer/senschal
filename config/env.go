@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"seneschal/internal/command/file"
 	"strings"
+
+	"seneschal/internal/command/file"
 
 	"github.com/spf13/viper"
 )

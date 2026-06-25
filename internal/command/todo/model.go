@@ -4,7 +4,7 @@ package todo
 type TodoStatus int
 
 const (
-	TodoStatus_Default   TodoStatus = iota //default
+	TodoStatus_Default   TodoStatus = iota // default
 	TodoStatus_Completed                   // completed
 	TodoStatus_Closed                      // closed
 )

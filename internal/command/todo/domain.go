@@ -3,8 +3,9 @@ package todo
 import (
 	"context"
 	"path/filepath"
-	"seneschal/config"
 	"sync"
+
+	"seneschal/config"
 )
 
 var (

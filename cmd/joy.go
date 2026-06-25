@@ -8,10 +8,11 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"seneschal/config"
-	"seneschal/pkg/util"
-	"seneschal/internal/command/file"
 	"strings"
+
+	"seneschal/config"
+	"seneschal/internal/command/file"
+	"seneschal/pkg/util"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -53,9 +54,9 @@ var joyCmd = &cobra.Command{
 }
 
 var joyInterCmd = &cobra.Command{
-	Use:   "inter <project> [flags] <service:api_name>",
-	Short: "register interface",
-	Args: cobra.ExactArgs(2),
+	Use:     "inter <project> [flags] <service:api_name>",
+	Short:   "register interface",
+	Args:    cobra.ExactArgs(2),
 	Example: "seneschal joy inter <project> [--lobby] <service:api_name>",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(strings.Split(args[1], ":")) != 2 {
@@ -281,10 +282,10 @@ func joyTplGetTemplateInfo(dir string) (*JoyTplTemplateInfo, error) {
 }
 
 var joyTplExecCmd = &cobra.Command{
-	Use:   "exec <tpl_name> [flags]",
-	Short: "execute tpl to generate files",
-		Args: cobra.ExactArgs(1),
-	Long:  "execute tpl to generate files\nNotice: setting file variable name should be lower case",
+	Use:     "exec <tpl_name> [flags]",
+	Short:   "execute tpl to generate files",
+	Args:    cobra.ExactArgs(1),
+	Long:    "execute tpl to generate files\nNotice: setting file variable name should be lower case",
 	Example: "seneschal joy tpl exec <tpl_name> [-d gen_dir] [-s setting_file] [-n name]",
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {

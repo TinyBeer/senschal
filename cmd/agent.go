@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"strings"
+
 	"seneschal/config"
 	"seneschal/internal/runner"
-	"seneschal/pkg/util"
 	envmgr "seneschal/internal/runner/env_mgr"
-	"strings"
+	"seneschal/pkg/util"
 
 	"github.com/spf13/cobra"
 )
@@ -23,14 +24,14 @@ func init() {
 }
 
 var agentCmd = &cobra.Command{
-	Use:   "agent",
-	Short: "agent manager tool",
+	Use:     "agent",
+	Short:   "agent manager tool",
 	Example: "seneschal agent [list|cp|check|deploy]",
 }
 
 var agentListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "list agent",
+	Use:     "list",
+	Short:   "list agent",
 	Example: "seneschal agent list",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		m, err := config.GetSSHConfigMap()
@@ -53,11 +54,11 @@ var agentListCmd = &cobra.Command{
 
 // agent copy command
 var agentCpCmd = &cobra.Command{
-	Use:   "cp",
-	Short: "agent copy file",
-	Long:  "copy file between agent(not support fold yet)",
+	Use:     "cp",
+	Short:   "agent copy file",
+	Long:    "copy file between agent(not support fold yet)",
 	Example: "seneschal agent cp <src> <dst>",
-	Args: cobra.ExactArgs(2),
+	Args:    cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Printf("cp %s to %s\n", args[0], args[1])
 		err := runner.Copy(args[0], args[1])
@@ -70,10 +71,10 @@ var agentCpCmd = &cobra.Command{
 
 // agent check env
 var agentCheckCmd = &cobra.Command{
-	Use:   "check <alias1>[,alias2]... <env>",
-	Short: "check agent environment",
+	Use:     "check <alias1>[,alias2]... <env>",
+	Short:   "check agent environment",
 	Example: "seneschal agent check <alias1,alias2> <env>",
-	Args: cobra.ExactArgs(2),
+	Args:    cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ecm, err := config.GetEnvConfigMap()
 		if err != nil {
@@ -140,10 +141,10 @@ var agentCheckCmd = &cobra.Command{
 
 // agent deploy
 var agentDeployCmd = &cobra.Command{
-	Use:   "deploy <alias1>[,alias2]... <env>",
-	Short: "deploy env on selected agent",
+	Use:     "deploy <alias1>[,alias2]... <env>",
+	Short:   "deploy env on selected agent",
 	Example: "seneschal agent deploy <alias1,alias2> <env>",
-	Args: cobra.ExactArgs(2),
+	Args:    cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ecm, err := config.GetEnvConfigMap()
 		if err != nil {

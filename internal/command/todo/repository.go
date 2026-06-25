@@ -40,10 +40,9 @@ func (r *TodoFileRepo) AddTodo(ctx context.Context, todo *Todo) (string, error) 
 	todo.UpdatedAt = curUnix
 	store.List = append(store.List, todo)
 	bs, _ := json.Marshal(store)
-	err = os.WriteFile(r.File, bs, 0655)
+	err = os.WriteFile(r.File, bs, 0o655)
 	return id, err
 }
-
 
 // CompleteByID implements TodoRepository.
 func (r *TodoFileRepo) CompleteByID(ctx context.Context, id string) error {
@@ -67,7 +66,7 @@ func (r *TodoFileRepo) CompleteByID(ctx context.Context, id string) error {
 	todo.Status = TodoStatus_Completed
 
 	bs, _ := json.Marshal(store)
-	return os.WriteFile(r.File, bs, 0644)
+	return os.WriteFile(r.File, bs, 0o644)
 }
 
 // DeleteTodoByID implements TodoRepository.
@@ -90,7 +89,7 @@ func (r *TodoFileRepo) DeleteTodoByID(ctx context.Context, id string) error {
 	todo.DeletedAt = curUnix
 
 	bs, _ := json.Marshal(store)
-	return os.WriteFile(r.File, bs, 0644)
+	return os.WriteFile(r.File, bs, 0o644)
 }
 
 // GetByID implements TodoRepository.
@@ -125,7 +124,7 @@ func (r *TodoFileRepo) List(ctx context.Context) ([]*Todo, error) {
 }
 
 func (r *TodoFileRepo) getStore() (*TodoStore, error) {
-	if err := os.MkdirAll(filepath.Dir(r.File), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(r.File), 0o755); err != nil {
 		return nil, err
 	}
 	store := &TodoStore{

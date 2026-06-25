@@ -15,7 +15,8 @@ type ImageTextData struct {
 }
 
 func ConvertImage2Text(inputPath string,
-	width, height int, invert, colors bool) (*ImageTextData, error) {
+	width, height int, invert, colors bool,
+) (*ImageTextData, error) {
 	imgList, err := getImgList(inputPath)
 	if err != nil {
 		return nil, err

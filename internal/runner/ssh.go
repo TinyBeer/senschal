@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+
 	"seneschal/config"
 
 	"golang.org/x/crypto/ssh"
