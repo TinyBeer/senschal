@@ -159,7 +159,7 @@ func (p *Path) IsDir() (bool, error) {
 		}
 
 		// 处理输出结果
-			result := strings.TrimSpace(string(output))
+		result := strings.TrimSpace(string(output))
 		if strings.Contains(result, "directory") {
 			p.Type = PathType_Dir
 		} else if strings.Contains(result, "regular file") {
