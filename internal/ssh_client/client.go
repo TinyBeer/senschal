@@ -47,11 +47,18 @@ loop:
 				panic(err)
 			}
 			out, err = command.CombinedOutput()
-			fmt.Println(string(out), err)
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				fmt.Println(string(out))
+			}
 		}
 		fmt.Print("> ")
 	}
 
+	if err := scanner.Err(); err != nil {
+		fmt.Printf("ssh 连接异常: %v\n", err)
+	}
 }
 
 // Download implements [SSHClient].
