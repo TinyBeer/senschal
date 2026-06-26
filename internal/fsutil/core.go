@@ -2,20 +2,13 @@ package fsutil
 
 import (
 	"errors"
+	"fmt"
 	"io"
-)
+	"os"
+	"strings"
 
-// ===================== 对外导出配置模型 =====================
-// SSHConfig SSH连接配置，供业务层初始化使用
-type SSHConfig struct {
-	Host           string
-	Port           int
-	User           string
-	Password       string
-	PrivateKey     []byte
-	DialTimeoutSec int // TCP+SSH握手超时
-	SessTimeoutSec int // 单次session读写/命令超时
-}
+	"seneschal/config"
+)
 
 // ===================== 路径解析结构与方法 =====================
 // PathRef 统一路径封装，格式：/local/file 、alias:/remote/file
@@ -26,7 +19,28 @@ type PathRef struct {
 }
 
 // Parse 解析路径字符串生成PathRef
-func Parse(input string) (*PathRef, error) { return nil, nil }
+func Parse(input string) (*PathRef, error) {
+	if input == "" {
+		return nil, errors.New("empty path")
+	}
+	splited := strings.Split(input, ":")
+	switch len(splited) {
+	case 1:
+		return &PathRef{
+			IsRemote: false,
+			Alias:    "",
+			RawPath:  input,
+		}, nil
+	case 2:
+		return &PathRef{
+			IsRemote: true,
+			Alias:    splited[0],
+			RawPath:  splited[1],
+		}, nil
+	default:
+		return nil, fmt.Errorf("invalid path: %s", input)
+	}
+}
 
 func (p *PathRef) IsLocal() bool { return !p.IsRemote }
 
@@ -64,24 +78,110 @@ type localFS struct {
 
 var _ FileSystem = (*localFS)(nil)
 
-func (l *localFS) Stat(ref *PathRef) (FileStat, error)            { return FileStat{}, nil }
-func (l *localFS) OpenRead(ref *PathRef) (io.ReadCloser, error)   { return nil, nil }
-func (l *localFS) OpenWrite(ref *PathRef) (io.WriteCloser, error) { return nil, nil }
-func (l *localFS) ListDir(ref *PathRef) ([]DirEntry, error)       { return nil, nil }
+func (l *localFS) Stat(ref *PathRef) (FileStat, error) {
+	fi, err := os.Stat(ref.RawPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return FileStat{
+				Exist: false,
+				IsDir: false,
+				Size:  0,
+			}, nil
+		}
+		return FileStat{}, err
+	}
+	return FileStat{
+		Exist: true,
+		IsDir: fi.IsDir(),
+		Size:  fi.Size(),
+	}, nil
+}
+
+func (l *localFS) OpenRead(ref *PathRef) (io.ReadCloser, error) {
+	return os.Open(ref.RawPath)
+}
+
+func (l *localFS) OpenWrite(ref *PathRef) (io.WriteCloser, error) {
+	return os.Create(ref.RawPath)
+}
+
+func (l *localFS) ListDir(ref *PathRef) ([]DirEntry, error) {
+	entries, err := os.ReadDir(ref.RawPath)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]DirEntry, 0, len(entries))
+	for _, entry := range entries {
+		info, err := entry.Info()
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, DirEntry{
+			Name: entry.Name(),
+			Stat: FileStat{
+				Exist: true,
+				IsDir: entry.IsDir(),
+				Size:  info.Size(),
+			},
+		})
+	}
+
+	return result, nil
+}
+
+type RemoteClient interface {
+	Close() error
+	Stat(remotePath string) (*RemoteStat, error)
+	OpenReader(remotePath string) (io.ReadCloser, error)
+	OpenWriter(remotePath string) (io.WriteCloser, error)
+	ListDir(remoteDir string) ([]RemoteDirEntry, error)
+}
 
 type remoteFS struct {
-	cli *sshClient
+	cli RemoteClient
 }
 
 var _ FileSystem = (*remoteFS)(nil)
 
-func (r *remoteFS) Stat(ref *PathRef) (FileStat, error)            { return FileStat{}, nil }
-func (r *remoteFS) OpenRead(ref *PathRef) (io.ReadCloser, error)   { return nil, nil }
-func (r *remoteFS) OpenWrite(ref *PathRef) (io.WriteCloser, error) { return nil, nil }
-func (r *remoteFS) ListDir(ref *PathRef) ([]DirEntry, error)       { return nil, nil }
+func (r *remoteFS) Stat(ref *PathRef) (FileStat, error) {
+	state, err := r.cli.Stat(ref.RawPath)
+	if err != nil {
+		return FileStat{}, err
+	}
+	return FileStat{
+		Exist: state.Exist,
+		IsDir: state.IsDir,
+		Size:  state.Size,
+	}, nil
+}
+
+func (r *remoteFS) OpenRead(ref *PathRef) (io.ReadCloser, error) {
+	return r.cli.OpenReader(ref.RawPath)
+}
+
+func (r *remoteFS) OpenWrite(ref *PathRef) (io.WriteCloser, error) {
+	return r.cli.OpenWriter(ref.RawPath)
+}
+
+func (r *remoteFS) ListDir(ref *PathRef) ([]DirEntry, error) {
+	entries, err := r.cli.ListDir(ref.RawPath)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]DirEntry, 0, len(entries))
+	for _, entry := range entries {
+		result = append(result, DirEntry{
+			Name: entry.Name,
+			Stat: entry.Stat,
+		})
+	}
+	return result, nil
+}
 
 // ===================== 工厂方法：自动匹配本地/远端FileSystem =====================
-func GetFS(ref *PathRef, sshConfMap map[string]*SSHConfig) (FileSystem, error) {
+func GetFS(ref *PathRef, sshConfMap map[string]*config.SSHConfig) (FileSystem, error) {
 	if ref.IsLocal() {
 		return &localFS{cli: newLocalClient()}, nil
 	}
@@ -89,28 +189,24 @@ func GetFS(ref *PathRef, sshConfMap map[string]*SSHConfig) (FileSystem, error) {
 	if !ok {
 		return nil, errors.New("ssh alias not found in config map")
 	}
-	innerConf := &sshClientConfig{
-		Host:           conf.Host,
-		Port:           conf.Port,
-		User:           conf.User,
-		Password:       conf.Password,
-		PrivateKey:     conf.PrivateKey,
-		DialTimeoutSec: conf.DialTimeoutSec,
-		SessTimeoutSec: conf.SessTimeoutSec,
+
+	if conf.SSH != nil {
+		return nil, fmt.Errorf("alias[%s] missing ssh config", conf.Alias)
 	}
-	cli, err := newSSHClient(innerConf)
+	cli, err := newSSHClient(conf)
 	if err != nil {
 		return nil, err
 	}
+
 	return &remoteFS{cli: cli}, nil
 }
 
 // ===================== 传输管理器：业务上传/下载/目录拷贝入口 =====================
 type Transfer struct {
-	sshConfigMap map[string]*SSHConfig
+	sshConfigMap map[string]*config.SSHConfig
 }
 
-func NewTransfer(sshConfMap map[string]*SSHConfig) *Transfer {
+func NewTransfer(sshConfMap map[string]*config.SSHConfig) *Transfer {
 	return &Transfer{sshConfigMap: sshConfMap}
 }
 

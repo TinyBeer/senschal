@@ -169,6 +169,11 @@ seneschal/
 │   ├── workout.go         # 从 CSV 读取的运动配置（时长/计数/休息项）
 │   └── workouttype_string.go  # 自动生成的 stringer
 ├── internal/
+│   ├── fsutil/             # 文件系统抽象层（本地/远程统一接口）
+│   │   ├── core.go         # FileSystem 接口、PathRef、localFS、remoteFS、Transfer
+│   │   ├── core_test.go    # 本地文件操作测试
+│   │   ├── sshfs.go        # SSH 客户端封装与 RemoteClient 接口
+│   │   └── sshfs_test.go   # 远程文件操作 Mock 测试
 │   ├── runner/             # 执行逻辑，与命令解耦
 │   │   ├── exec.go         # 通过 os/exec 执行本地命令
 │   │   ├── ssh.go          # SSH 客户端、会话管理、断点续传
