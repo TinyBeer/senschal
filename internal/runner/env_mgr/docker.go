@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"seneschal/config"
+	"seneschal/internal/fsutil"
 	"seneschal/internal/runner"
 )
 
@@ -175,6 +176,12 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 		return err
 	}
 
+	scm, err := config.GetSSHConfigMap()
+	if err != nil {
+		return fmt.Errorf("get ssh config map: %w", err)
+	}
+	transfer := fsutil.NewTransfer(scm)
+
 	fmt.Println("check docker ...")
 	// 1. check docker installment
 	res, err := e.Check(c)
@@ -198,7 +205,7 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 				log.Println("install docker with internet ok...")
 			} else {
 				// 1.2 try to install docker with deb
-				err = runner.Copy(config.DOCKER_DEB_DIR, c.Alias+":ops")
+				err = transfer.Upload(config.DOCKER_DEB_DIR, c.Alias+":ops")
 				if err != nil {
 					return err
 				}
@@ -245,12 +252,12 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 				return err
 			}
 			for _, image := range diagnosis.MissingImageList {
-				err = runner.Copy(image.LocalFilePath(), c.Alias+":ops/docker_image/"+image.Name())
+				err = transfer.Upload(image.LocalFilePath(), c.Alias+":ops/docker_image/"+image.Name())
 				if err != nil {
 					return err
 				}
 			}
-			err = runner.Copy(filepath.Join(config.DOCKER_IMAGE_DIR, "load.sh"), c.Alias+":ops/docker_image/load.sh")
+			err = transfer.Upload(filepath.Join(config.DOCKER_IMAGE_DIR, "load.sh"), c.Alias+":ops/docker_image/load.sh")
 			if err != nil {
 				return err
 			}
