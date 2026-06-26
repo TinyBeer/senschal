@@ -1,9 +1,12 @@
 package config
 
-import "path/filepath"
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+)
 
 const (
-	Def_Data_Dir          = "data"
 	Conf_Dir_Name         = "conf"
 	Env_Conf_Dir_Name     = "env"
 	Docker_Image_Dir_Name = "docker_image"
@@ -18,6 +21,14 @@ const (
 	Tpl_Template_Dir_Name = "template"
 	Tpl_Setting_Name      = "setting"
 )
+
+var Def_Data_Dir = func() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		panic(fmt.Sprintf("cannot get user home directory: %v", err))
+	}
+	return filepath.Join(home, ".seneschal")
+}()
 
 var (
 	CFG_DIR     = filepath.Join(Def_Data_Dir, Conf_Dir_Name)
