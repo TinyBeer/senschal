@@ -178,6 +178,12 @@ func (c *sshClient) OpenWriter(remotePath string) (io.WriteCloser, error) {
 	return writer, nil
 }
 
+// MkdirAll 在远端递归创建目录
+func (c *sshClient) MkdirAll(remotePath string) error {
+	_, err := c.runCommand(fmt.Sprintf("mkdir -p %s", remotePath))
+	return err
+}
+
 // ListDir 列出远端目录内容，通过 find + printf 获取名称/大小/类型
 func (c *sshClient) ListDir(remoteDir string) ([]RemoteDirEntry, error) {
 	// 使用 find 遍历一级目录，输出格式：name\t size\t type
@@ -240,4 +246,3 @@ func (r *remoteReadCloser) Read(p []byte) (int, error) {
 func (r *remoteReadCloser) Close() error {
 	return r.session.Close()
 }
-

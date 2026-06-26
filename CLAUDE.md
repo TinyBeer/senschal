@@ -142,6 +142,8 @@ CLI 使用 `cobra` 构建。所有命令通过 `init()` 注册在 `cmd/` 中。
 | `seneschal env`                          | 列出环境配置                                                                               |
 | `seneschal agent list`                   | 列出 SSH 代理（服务器）配置                                                                |
 | `seneschal agent cp <src> <dst>`         | 在代理间复制文件（本地或远程，支持 `alias:path` 语法）                                     |
+| `seneschal agent up <aliases> <local> <remote>` | 上传文件/目录到多个代理，别名逗号分隔                                                     |
+| `seneschal agent down <alias> <remote> <local>` | 从代理下载文件/目录到本地                                                                   |
 | `seneschal agent check <aliases> <env>`  | 检查远程代理的环境状态                                                                     |
 | `seneschal agent deploy <aliases> <env>` | 部署环境（Docker）到远程代理                                                               |
 | `seneschal todo [add/done/del]`          | Todo 列表管理器，JSON 文件持久化                                                           |
@@ -170,7 +172,7 @@ seneschal/
 │   └── workouttype_string.go  # 自动生成的 stringer
 ├── internal/
 │   ├── fsutil/             # 文件系统抽象层（本地/远程统一接口）
-│   │   ├── core.go         # FileSystem 接口、PathRef、localFS、remoteFS、Transfer
+│   │   ├── core.go         # FileSystem 接口、PathRef、localFS、remoteFS、Transfer（CopyFile/CopyDir/Upload/Download）
 │   │   ├── core_test.go    # 本地文件操作测试
 │   │   ├── localfs.go      # localClient 本地文件操作底层封装
 │   │   ├── sshfs.go        # SSH 客户端封装与 RemoteClient 接口
@@ -203,20 +205,15 @@ seneschal/
 ├── pkg/util/               # 工具函数
 │   ├── table.go            # 支持 markdown 的 CLI 表格渲染
 │   └── file.go             # 文件保存工具
-├── ui/
-│   ├── component/         # 终端 UI 组件库
-│   │   ├── container.go  # Box（水平/垂直布局）、InlineText、Rectangle 容器
-│   │   ├── style.go       # Lipgloss 样式预设
-│   │   ├── string_util.go # 支持中文的滑动窗口字符串显示
-│   │   └── string_util_test.go
-│   └── terminal/
-│       └── workout.go     # 基于 Bubble Tea 的运动计时器 TUI
-└── data/                  # 运行时数据（配置、模板、镜像...）
-    ├── conf/              # TOML 配置（env/、project/、ssh/、workout/）
-    ├── tpl/               # Go 模板目录（含 setting.toml）
-    ├── _gen/              # 模板执行生成的输出
-    ├── docker_image/      # 保存的 Docker 镜像（.tar）
-    └── docker_deb/        # 用于离线安装的 Docker .deb 包
+└── ui/
+     ├── component/         # 终端 UI 组件库
+     │   ├── container.go  # Box（水平/垂直布局）、InlineText、Rectangle 容器
+     │   ├── style.go       # Lipgloss 样式预设
+     │   ├── string_util.go # 支持中文的滑动窗口字符串显示
+     │   └── string_util_test.go
+     └── terminal/
+         └── workout.go     # 基于 Bubble Tea 的运动计时器 TUI
+
 ```
 
 ## 关键设计模式

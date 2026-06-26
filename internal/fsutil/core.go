@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 
 	"seneschal/config"
@@ -69,6 +71,7 @@ type FileSystem interface {
 	OpenRead(ref *PathRef) (io.ReadCloser, error)
 	OpenWrite(ref *PathRef) (io.WriteCloser, error)
 	ListDir(ref *PathRef) ([]DirEntry, error)
+	MkdirAll(ref *PathRef) error
 }
 
 // ===================== 内部适配层（实现FileSystem，桥接localfs/sshfs逻辑） =====================
@@ -130,12 +133,17 @@ func (l *localFS) ListDir(ref *PathRef) ([]DirEntry, error) {
 	return result, nil
 }
 
+func (l *localFS) MkdirAll(ref *PathRef) error {
+	return os.MkdirAll(ref.RawPath, 0o755)
+}
+
 type RemoteClient interface {
 	Close() error
 	Stat(remotePath string) (*RemoteStat, error)
 	OpenReader(remotePath string) (io.ReadCloser, error)
 	OpenWriter(remotePath string) (io.WriteCloser, error)
 	ListDir(remoteDir string) ([]RemoteDirEntry, error)
+	MkdirAll(remotePath string) error
 }
 
 type remoteFS struct {
@@ -178,6 +186,10 @@ func (r *remoteFS) ListDir(ref *PathRef) ([]DirEntry, error) {
 		})
 	}
 	return result, nil
+}
+
+func (r *remoteFS) MkdirAll(ref *PathRef) error {
+	return r.cli.MkdirAll(ref.RawPath)
 }
 
 // ===================== 工厂方法：自动匹配本地/远端FileSystem =====================
@@ -238,7 +250,63 @@ func (t *Transfer) CopyFile(srcRef, dstRef *PathRef) error {
 }
 
 // CopyDir 递归完整拷贝目录
-func (t *Transfer) CopyDir(srcRef, dstRef *PathRef) error { return nil }
+func (t *Transfer) CopyDir(srcRef, dstRef *PathRef) error {
+	srcFS, err := GetFS(srcRef, t.sshConfigMap)
+	if err != nil {
+		return fmt.Errorf("get src fs: %w", err)
+	}
+	dstFS, err := GetFS(dstRef, t.sshConfigMap)
+	if err != nil {
+		return fmt.Errorf("get dst fs: %w", err)
+	}
+
+	return t.copyDirRecursive(srcFS, dstFS, srcRef, dstRef)
+}
+
+// copyDirRecursive 递归拷贝目录条目
+func (t *Transfer) copyDirRecursive(srcFS, dstFS FileSystem, srcRef, dstRef *PathRef) error {
+	// 先确保目标目录存在
+	if err := dstFS.MkdirAll(dstRef); err != nil {
+		return fmt.Errorf("mkdir destination %s: %w", dstRef.RawPath, err)
+	}
+
+	entries, err := srcFS.ListDir(srcRef)
+	if err != nil {
+		return fmt.Errorf("list source %s: %w", srcRef.RawPath, err)
+	}
+
+	for _, entry := range entries {
+		srcChild := &PathRef{
+			IsRemote: srcRef.IsRemote,
+			Alias:    srcRef.Alias,
+			RawPath:  joinPath(srcRef.IsRemote, srcRef.RawPath, entry.Name),
+		}
+		dstChild := &PathRef{
+			IsRemote: dstRef.IsRemote,
+			Alias:    dstRef.Alias,
+			RawPath:  joinPath(dstRef.IsRemote, dstRef.RawPath, entry.Name),
+		}
+
+		if entry.Stat.IsDir {
+			if err := t.copyDirRecursive(srcFS, dstFS, srcChild, dstChild); err != nil {
+				return fmt.Errorf("subdir %s: %w", entry.Name, err)
+			}
+		} else {
+			if err := t.CopyFile(srcChild, dstChild); err != nil {
+				return fmt.Errorf("file %s: %w", entry.Name, err)
+			}
+		}
+	}
+	return nil
+}
+
+// joinPath 根据路径类型（本地/远端）选择合适的路径连接符
+func joinPath(isRemote bool, elems ...string) string {
+	if isRemote {
+		return path.Join(elems...)
+	}
+	return filepath.Join(elems...)
+}
 
 // Upload 快捷API：本地文件上传SSH远端
 func (t *Transfer) Upload(localPath, remotePath string) error {

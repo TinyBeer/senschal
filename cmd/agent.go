@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"seneschal/config"
+	"seneschal/internal/fsutil"
 	"seneschal/internal/runner"
 	envmgr "seneschal/internal/runner/env_mgr"
 	"seneschal/pkg/util"
@@ -20,6 +21,8 @@ func init() {
 	agentCmd.AddCommand(agentCpCmd)
 	agentCmd.AddCommand(agentCheckCmd)
 	agentCmd.AddCommand(agentDeployCmd)
+	agentCmd.AddCommand(agentUpCmd)
+	agentCmd.AddCommand(agentDownCmd)
 	rootCmd.AddCommand(agentCmd)
 }
 
@@ -65,6 +68,131 @@ var agentCpCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("copy failed: %w", err)
 		}
+		return nil
+	},
+}
+
+// agent upload file or dir
+var agentUpCmd = &cobra.Command{
+	Use:     "up <alias1>[,alias2]... <local_path> <remote_path>",
+	Short:   "upload file or dir to agent",
+	Example: "seneschal agent up agent1,agent2 test.txt ops",
+	Args:    cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		aliases := strings.Split(args[0], ",")
+		localPath := args[1]
+		remotePath := args[2]
+
+		scm, err := config.GetSSHConfigMap()
+		if err != nil {
+			return fmt.Errorf("failed to get ssh config: %w", err)
+		}
+
+		// 检查本地路径是否存在
+		localRef, err := fsutil.Parse(localPath)
+		if err != nil {
+			return fmt.Errorf("invalid local path: %w", err)
+		}
+		localFs, err := fsutil.GetFS(localRef, scm)
+		if err != nil {
+			return fmt.Errorf("failed to get local fs: %w", err)
+		}
+		localStat, err := localFs.Stat(localRef)
+		if err != nil {
+			return fmt.Errorf("stat local path: %w", err)
+		}
+		if !localStat.Exist {
+			return fmt.Errorf("local path not found: %s", localPath)
+		}
+
+		transfer := fsutil.NewTransfer(scm)
+
+		for _, alias := range aliases {
+			alias = strings.TrimSpace(alias)
+			if alias == "" {
+				continue
+			}
+			// 检查 SSH 配置
+			if _, ok := scm[alias]; !ok {
+				log.Printf("跳过 %s：未找到配置信息\n", alias)
+				continue
+			}
+
+			fullRemotePath := alias + ":" + remotePath
+			dstRef, err := fsutil.Parse(fullRemotePath)
+			if err != nil {
+				log.Printf("invalid remote path for %s: %v", alias, err)
+				continue
+			}
+
+			if localStat.IsDir {
+				if err := transfer.CopyDir(localRef, dstRef); err != nil {
+					log.Printf("上传目录到 %s 失败: %v", alias, err)
+					continue
+				}
+			} else {
+				if err := transfer.Upload(localPath, fullRemotePath); err != nil {
+					log.Printf("上传文件到 %s 失败: %v", alias, err)
+					continue
+				}
+			}
+			log.Printf("上传 %s → %s:%s 成功\n", localPath, alias, remotePath)
+		}
+		return nil
+	},
+}
+
+// agent download file or dir
+var agentDownCmd = &cobra.Command{
+	Use:     "down <alias> <remote_path> <local_path>",
+	Short:   "download file or dir from agent",
+	Example: "seneschal agent down agent test.txt .",
+	Args:    cobra.ExactArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		alias := args[0]
+		remotePath := args[1]
+		localPath := args[2]
+
+		scm, err := config.GetSSHConfigMap()
+		if err != nil {
+			return fmt.Errorf("failed to get ssh config: %w", err)
+		}
+		if _, ok := scm[alias]; !ok {
+			return fmt.Errorf("未找到 %s 的配置信息", alias)
+		}
+
+		fullRemotePath := alias + ":" + remotePath
+		srcRef, err := fsutil.Parse(fullRemotePath)
+		if err != nil {
+			return fmt.Errorf("invalid remote path: %w", err)
+		}
+
+		// 检查远端路径是否存在
+		remoteFs, err := fsutil.GetFS(srcRef, scm)
+		if err != nil {
+			return fmt.Errorf("failed to get remote fs: %w", err)
+		}
+		remoteStat, err := remoteFs.Stat(srcRef)
+		if err != nil {
+			return fmt.Errorf("stat remote path: %w", err)
+		}
+		if !remoteStat.Exist {
+			return fmt.Errorf("remote path not found: %s:%s", alias, remotePath)
+		}
+
+		transfer := fsutil.NewTransfer(scm)
+		dstRef, _ := fsutil.Parse(localPath)
+
+		if remoteStat.IsDir {
+			if err := transfer.CopyDir(srcRef, dstRef); err != nil {
+				return fmt.Errorf("下载目录失败: %w", err)
+			}
+		} else {
+			if err := transfer.Download(fullRemotePath, localPath); err != nil {
+				return fmt.Errorf("下载文件失败: %w", err)
+			}
+		}
+		log.Printf("下载 %s:%s → %s 成功\n", alias, remotePath, localPath)
 		return nil
 	},
 }

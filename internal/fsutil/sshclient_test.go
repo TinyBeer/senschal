@@ -73,10 +73,10 @@ func startKeySSHServer(t *testing.T, workDir string, allowedPubKey ssh.PublicKey
 	listener, port := listenTCP(t)
 
 	srv := &testSSHServer{
-		t:         t,
-		listener:  listener,
-		hostPort:  port,
-		hostKey:   hostKey,
+		t:        t,
+		listener: listener,
+		hostPort: port,
+		hostKey:  hostKey,
 	}
 
 	config := &ssh.ServerConfig{
@@ -236,7 +236,7 @@ func generateKeyPair(t *testing.T) (privateKeyPEM []byte, publicKey ssh.PublicKe
 
 	publicKey, err = ssh.NewPublicKey(&key.PublicKey)
 	require.NoError(t, err)
-	return
+	return privateKeyPEM, publicKey
 }
 
 // ===================== 测试用例 =====================

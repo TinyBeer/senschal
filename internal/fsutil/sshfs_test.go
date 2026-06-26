@@ -55,6 +55,11 @@ func (m *MockSSHClient) ListDir(remoteDir string) ([]RemoteDirEntry, error) {
 	return names, args.Error(1)
 }
 
+func (m *MockSSHClient) MkdirAll(remotePath string) error {
+	args := m.Called(remotePath)
+	return args.Error(0)
+}
+
 // 辅助：空实现 ReadCloser / WriteCloser
 type nopReadCloser struct {
 	io.Reader
