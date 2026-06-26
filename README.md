@@ -55,6 +55,10 @@ seneschal workout -l                        # 运动计时器
 
 ## TODO
 
+### 功能
+
+- [] Jenkins 常用api接入
+
 ### 优化
 
 - [x] 实现 agent up/down 文件上传下载命令
