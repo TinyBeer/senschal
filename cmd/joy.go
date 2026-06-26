@@ -315,9 +315,9 @@ var joyTplExecCmd = &cobra.Command{
 			if info.Alias == tplName {
 				tplPath := info.Path
 				if genDir == "" {
-					genDir = filepath.Join(config.Tpl_Gen_Dir, tplName)
+					genDir = filepath.Join(config.Def_Generate_Dir, tplName)
 					if dirName != "" {
-						genDir = filepath.Join(config.Tpl_Gen_Dir, dirName)
+						genDir = filepath.Join(config.Def_Generate_Dir, dirName)
 					}
 				}
 				if settingFilePath == "" {

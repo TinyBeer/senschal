@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	Def_Generate_Dir      = "build"
 	Conf_Dir_Name         = "conf"
 	Env_Conf_Dir_Name     = "env"
 	Docker_Image_Dir_Name = "docker_image"
@@ -42,5 +43,4 @@ var (
 	Project_Dir      = filepath.Join(CFG_DIR, Project_Dir_Name)
 	Todo_Dir         = filepath.Join(Def_Data_Dir, Todo_Dir_Name)
 	Tpl_Dir          = filepath.Join(Def_Data_Dir, Tpl_Dir_Name)
-	Tpl_Gen_Dir      = filepath.Join(Def_Data_Dir, Tpl_Gen_Dir_Name)
 )
