@@ -190,7 +190,7 @@ func GetFS(ref *PathRef, sshConfMap map[string]*config.SSHConfig) (FileSystem, e
 		return nil, errors.New("ssh alias not found in config map")
 	}
 
-	if conf.SSH != nil {
+	if conf.SSH == nil {
 		return nil, fmt.Errorf("alias[%s] missing ssh config", conf.Alias)
 	}
 	cli, err := newSSHClient(conf)
