@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"path"
+	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -76,19 +78,27 @@ var agentCpCmd = &cobra.Command{
 var agentUpCmd = &cobra.Command{
 	Use:     "up <alias1>[,alias2]... <local_path> <remote_path>",
 	Short:   "upload file or dir to agent",
+	Long: `Upload file or directory to remote agent(s).
+
+Directory behavior:
+  seneschal agent up s1 ./deploy /opt/app    → creates /opt/app/deploy/ on remote
+  seneschal agent up s1 ./deploy/* /opt/app  → copies contents directly into /opt/app/`,
 	Example: "seneschal agent up agent1,agent2 test.txt ops",
 	Args:    cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		aliases := strings.Split(args[0], ",")
-		localPath := args[1]
-		remotePath := args[2]
+		rawLocalPath := args[1]
+		rawRemotePath := args[2]
 
 		scm, err := config.GetSSHConfigMap()
 		if err != nil {
 			return fmt.Errorf("failed to get ssh config: %w", err)
 		}
 
-		// 检查本地路径是否存在
+		// 解析 /* 标记：dir/* 表示只拷贝目录内容，不保留外层目录名
+		contentsOnly := strings.HasSuffix(rawLocalPath, "/*")
+		localPath := strings.TrimSuffix(rawLocalPath, "/*")
+
 		localRef, err := fsutil.Parse(localPath)
 		if err != nil {
 			return fmt.Errorf("invalid local path: %w", err)
@@ -104,6 +114,9 @@ var agentUpCmd = &cobra.Command{
 		if !localStat.Exist {
 			return fmt.Errorf("local path not found: %s", localPath)
 		}
+		if contentsOnly && !localStat.IsDir {
+			return fmt.Errorf("contents-only pattern /* requires a directory: %s", rawLocalPath)
+		}
 
 		transfer := fsutil.NewTransfer(scm)
 
@@ -112,31 +125,51 @@ var agentUpCmd = &cobra.Command{
 			if alias == "" {
 				continue
 			}
-			// 检查 SSH 配置
 			if _, ok := scm[alias]; !ok {
 				log.Printf("跳过 %s：未找到配置信息\n", alias)
 				continue
 			}
 
-			fullRemotePath := alias + ":" + remotePath
-			dstRef, err := fsutil.Parse(fullRemotePath)
-			if err != nil {
-				log.Printf("invalid remote path for %s: %v", alias, err)
-				continue
-			}
-
-			if localStat.IsDir {
+			if contentsOnly {
+				// dir/* 模式：逐条拷贝到远端，不保留外层目录名
+				entries, err := localFs.ListDir(localRef)
+				if err != nil {
+					log.Printf("读取目录 %s 失败: %v", localPath, err)
+					continue
+				}
+				for _, entry := range entries {
+					srcEntry := filepath.Join(localPath, entry.Name)
+					dstEntry := alias + ":" + path.Join(rawRemotePath, entry.Name)
+					srcRef, _ := fsutil.Parse(srcEntry)
+					dstRef, _ := fsutil.Parse(dstEntry)
+					if entry.Stat.IsDir {
+						if err := transfer.CopyDir(srcRef, dstRef); err != nil {
+							log.Printf("上传子目录 %s 到 %s 失败: %v", entry.Name, alias, err)
+						}
+					} else {
+						if err := transfer.CopyFile(srcRef, dstRef); err != nil {
+							log.Printf("上传文件 %s 到 %s 失败: %v", entry.Name, alias, err)
+						}
+					}
+				}
+			} else if localStat.IsDir {
+				// 目录拷贝：在远端创建同名目录
+				dirName := filepath.Base(localRef.RawPath)
+				dstPath := alias + ":" + path.Join(rawRemotePath, dirName)
+				dstRef, _ := fsutil.Parse(dstPath)
 				if err := transfer.CopyDir(localRef, dstRef); err != nil {
 					log.Printf("上传目录到 %s 失败: %v", alias, err)
 					continue
 				}
 			} else {
+				// 单文件上传
+				fullRemotePath := alias + ":" + rawRemotePath
 				if err := transfer.Upload(localPath, fullRemotePath); err != nil {
 					log.Printf("上传文件到 %s 失败: %v", alias, err)
 					continue
 				}
 			}
-			log.Printf("上传 %s → %s:%s 成功\n", localPath, alias, remotePath)
+			log.Printf("上传 %s → %s:%s 成功\n", rawLocalPath, alias, rawRemotePath)
 		}
 		return nil
 	},
@@ -146,11 +179,16 @@ var agentUpCmd = &cobra.Command{
 var agentDownCmd = &cobra.Command{
 	Use:     "down <alias> <remote_path> <local_path>",
 	Short:   "download file or dir from agent",
+	Long: `Download file or directory from remote agent.
+
+Directory behavior:
+  seneschal agent down s1 /opt/data ./backup    → creates ./backup/data/ locally
+  seneschal agent down s1 /opt/data/* ./backup  → copies contents directly into ./backup/`,
 	Example: "seneschal agent down agent test.txt .",
 	Args:    cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alias := args[0]
-		remotePath := args[1]
+		rawRemotePath := args[1]
 		localPath := args[2]
 
 		scm, err := config.GetSSHConfigMap()
@@ -161,13 +199,16 @@ var agentDownCmd = &cobra.Command{
 			return fmt.Errorf("未找到 %s 的配置信息", alias)
 		}
 
+		// 解析 /* 标记
+		contentsOnly := strings.HasSuffix(rawRemotePath, "/*")
+		remotePath := strings.TrimSuffix(rawRemotePath, "/*")
+
 		fullRemotePath := alias + ":" + remotePath
 		srcRef, err := fsutil.Parse(fullRemotePath)
 		if err != nil {
 			return fmt.Errorf("invalid remote path: %w", err)
 		}
 
-		// 检查远端路径是否存在
 		remoteFs, err := fsutil.GetFS(srcRef, scm)
 		if err != nil {
 			return fmt.Errorf("failed to get remote fs: %w", err)
@@ -179,11 +220,37 @@ var agentDownCmd = &cobra.Command{
 		if !remoteStat.Exist {
 			return fmt.Errorf("remote path not found: %s:%s", alias, remotePath)
 		}
+		if contentsOnly && !remoteStat.IsDir {
+			return fmt.Errorf("contents-only pattern /* requires a directory: %s", rawRemotePath)
+		}
 
 		transfer := fsutil.NewTransfer(scm)
-		dstRef, _ := fsutil.Parse(localPath)
 
-		if remoteStat.IsDir {
+		if contentsOnly {
+			// /* 模式：逐条拷贝到本地，不保留外层目录名
+			entries, err := remoteFs.ListDir(srcRef)
+			if err != nil {
+				return fmt.Errorf("list remote dir %s failed: %w", remotePath, err)
+			}
+			for _, entry := range entries {
+				srcEntry := alias + ":" + path.Join(remotePath, entry.Name)
+				dstEntry := filepath.Join(localPath, entry.Name)
+				srcRef2, _ := fsutil.Parse(srcEntry)
+				dstRef2, _ := fsutil.Parse(dstEntry)
+				if entry.Stat.IsDir {
+					if err := transfer.CopyDir(srcRef2, dstRef2); err != nil {
+						log.Printf("下载子目录 %s 失败: %v", entry.Name, err)
+					}
+				} else {
+					if err := transfer.CopyFile(srcRef2, dstRef2); err != nil {
+						log.Printf("下载文件 %s 失败: %v", entry.Name, err)
+					}
+				}
+			}
+		} else if remoteStat.IsDir {
+			// 目录拷贝：在本地创建同名目录
+			dirName := filepath.Base(remotePath)
+			dstRef, _ := fsutil.Parse(filepath.Join(localPath, dirName))
 			if err := transfer.CopyDir(srcRef, dstRef); err != nil {
 				return fmt.Errorf("下载目录失败: %w", err)
 			}
@@ -192,7 +259,7 @@ var agentDownCmd = &cobra.Command{
 				return fmt.Errorf("下载文件失败: %w", err)
 			}
 		}
-		log.Printf("下载 %s:%s → %s 成功\n", alias, remotePath, localPath)
+		log.Printf("下载 %s:%s → %s 成功\n", alias, rawRemotePath, localPath)
 		return nil
 	},
 }
