@@ -11,7 +11,6 @@ import (
 
 	"seneschal/config"
 	"seneschal/internal/fsutil"
-	"seneschal/internal/runner"
 	envmgr "seneschal/internal/runner/env_mgr"
 	"seneschal/pkg/util"
 
@@ -20,7 +19,6 @@ import (
 
 func init() {
 	agentCmd.AddCommand(agentListCmd)
-	agentCmd.AddCommand(agentCpCmd)
 	agentCmd.AddCommand(agentCheckCmd)
 	agentCmd.AddCommand(agentDeployCmd)
 	agentCmd.AddCommand(agentUpCmd)
@@ -57,27 +55,10 @@ var agentListCmd = &cobra.Command{
 	},
 }
 
-// agent copy command
-var agentCpCmd = &cobra.Command{
-	Use:     "cp",
-	Short:   "agent copy file",
-	Long:    "copy file between agent(not support fold yet)",
-	Example: "seneschal agent cp <src> <dst>",
-	Args:    cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Printf("cp %s to %s\n", args[0], args[1])
-		err := runner.Copy(args[0], args[1])
-		if err != nil {
-			return fmt.Errorf("copy failed: %w", err)
-		}
-		return nil
-	},
-}
-
 // agent upload file or dir
 var agentUpCmd = &cobra.Command{
-	Use:     "up <alias1>[,alias2]... <local_path> <remote_path>",
-	Short:   "upload file or dir to agent",
+	Use:   "up <alias1>[,alias2]... <local_path> <remote_path>",
+	Short: "upload file or dir to agent",
 	Long: `Upload file or directory to remote agent(s).
 
 Directory behavior:
@@ -177,8 +158,8 @@ Directory behavior:
 
 // agent download file or dir
 var agentDownCmd = &cobra.Command{
-	Use:     "down <alias> <remote_path> <local_path>",
-	Short:   "download file or dir from agent",
+	Use:   "down <alias> <remote_path> <local_path>",
+	Short: "download file or dir from agent",
 	Long: `Download file or directory from remote agent.
 
 Directory behavior:
