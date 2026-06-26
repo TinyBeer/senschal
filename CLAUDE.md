@@ -172,8 +172,10 @@ seneschal/
 │   ├── fsutil/             # 文件系统抽象层（本地/远程统一接口）
 │   │   ├── core.go         # FileSystem 接口、PathRef、localFS、remoteFS、Transfer
 │   │   ├── core_test.go    # 本地文件操作测试
+│   │   ├── localfs.go      # localClient 本地文件操作底层封装
 │   │   ├── sshfs.go        # SSH 客户端封装与 RemoteClient 接口
-│   │   └── sshfs_test.go   # 远程文件操作 Mock 测试
+│   │   ├── sshfs_test.go   # remoteFS Mock 测试
+│   │   └── sshclient_test.go # sshClient 真实 SSH 连接单元测试
 │   ├── runner/             # 执行逻辑，与命令解耦
 │   │   ├── exec.go         # 通过 os/exec 执行本地命令
 │   │   ├── ssh.go          # SSH 客户端、会话管理、断点续传

@@ -152,26 +152,30 @@ func (c *sshClient) OpenReader(remotePath string) (io.ReadCloser, error) {
 	return &remoteReadCloser{session: sess, reader: stdout}, nil
 }
 
-// OpenWriter 打开远端文件写流（cat > <file> 通过 stdin 写入）
+// OpenWriter 打开远端文件写流，参考 runner/file.go GetWriter 模式：
+//   - 获取 StdinPipe，在 goroutine 中运行 session.Run("cat > file")
+//   - 返回的 WriteCloser 即为 StdinPipe，关闭时发送 EOF 给远端 cat
+//   - goroutine 内的 Run 在 cat 退出后结束并清理 session
 func (c *sshClient) OpenWriter(remotePath string) (io.WriteCloser, error) {
 	sess, err := c.client.NewSession()
 	if err != nil {
 		return nil, fmt.Errorf("new session: %w", err)
 	}
 
-	stdin, err := sess.StdinPipe()
+	writer, err := sess.StdinPipe()
 	if err != nil {
 		sess.Close()
 		return nil, fmt.Errorf("stdin pipe: %w", err)
 	}
 
 	cmd := fmt.Sprintf("cat > %s", remotePath)
-	if err := sess.Start(cmd); err != nil {
-		sess.Close()
-		return nil, fmt.Errorf("start %q: %w", cmd, err)
-	}
+	go func() {
+		// Run 阻塞直到 cat 退出（writer 关闭时收到 EOF）
+		_ = sess.Run(cmd)
+	}()
 
-	return &remoteWriteCloser{session: sess, writer: stdin}, nil
+	// 直接返回 StdinPipe 作为 WriteCloser，由 goroutine 管理 session 生命周期
+	return writer, nil
 }
 
 // ListDir 列出远端目录内容，通过 find + printf 获取名称/大小/类型
@@ -237,29 +241,3 @@ func (r *remoteReadCloser) Close() error {
 	return r.session.Close()
 }
 
-// remoteWriteCloser 封装 SSH session 的 stdin pipe，关闭时等待命令完成
-type remoteWriteCloser struct {
-	session *ssh.Session
-	writer  io.WriteCloser
-}
-
-func (w *remoteWriteCloser) Write(p []byte) (int, error) {
-	return w.writer.Write(p)
-}
-
-func (w *remoteWriteCloser) Close() error {
-	// 先关闭 stdin pipe 发送 EOF 给远端 cat
-	pipeErr := w.writer.Close()
-	// 等待 cat 命令写入完成
-	waitErr := w.session.Wait()
-	// 清理 session
-	sessErr := w.session.Close()
-
-	if pipeErr != nil {
-		return pipeErr
-	}
-	if waitErr != nil {
-		return waitErr
-	}
-	return sessErr
-}
