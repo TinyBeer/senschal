@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"path"
@@ -251,36 +250,12 @@ var agentCheckCmd = &cobra.Command{
 	Short:   "check agent environment",
 	Example: "seneschal agent check <alias1,alias2> <env>",
 	Args:    cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		ecm, err := config.GetEnvConfigMap()
-		if err != nil {
-			return fmt.Errorf("failed to get env config: %w", err)
-		}
-		scm, err := config.GetSSHConfigMap()
-		if err != nil {
-			return fmt.Errorf("failed to get ssh config: %w", err)
-		}
-
-		envAlias := args[1]
-		ec, find := ecm[envAlias]
-		if !find {
-			return fmt.Errorf("未找到环境[%s]的配置信息", envAlias)
-		}
-		var envMgrList []envmgr.IEnvMgr
-		envMgrList = append(envMgrList, envmgr.NewEnvMgrDocker(ec))
-
-		sshAliasList := strings.Split(args[0], ",")
-
-		missingCfg := false
-		for _, alias := range sshAliasList {
-			if _, ok := scm[alias]; !ok {
-				log.Printf("未找到%s的配置信息\n", alias)
-				missingCfg = true
+		RunE: func(cmd *cobra.Command, args []string) error {
+			scm, sshAliasList, envMgrList, err := prepareAgentEnv(args)
+			if err != nil {
+				return err
 			}
-		}
-		if missingCfg {
-			return errors.New("存在未找到的机器配置")
-		}
+
 
 		var data [][]string
 		tblHead := []string{"alias"}
@@ -321,37 +296,12 @@ var agentDeployCmd = &cobra.Command{
 	Short:   "deploy env on selected agent",
 	Example: "seneschal agent deploy <alias1,alias2> <env>",
 	Args:    cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		ecm, err := config.GetEnvConfigMap()
-		if err != nil {
-			return fmt.Errorf("failed to get env config: %w", err)
-		}
-
-		scm, err := config.GetSSHConfigMap()
-		if err != nil {
-			return fmt.Errorf("failed to get ssh config: %w", err)
-		}
-
-		envAlias := args[1]
-		ec, find := ecm[envAlias]
-		if !find {
-			return fmt.Errorf("未找到环境[%s]的配置信息", envAlias)
-		}
-		var envMgrList []envmgr.IEnvMgr
-		envMgrList = append(envMgrList, envmgr.NewEnvMgrDocker(ec))
-
-		sshAliasList := strings.Split(args[0], ",")
-
-		missingCfg := false
-		for _, alias := range sshAliasList {
-			if _, ok := scm[alias]; !ok {
-				log.Printf("未找到%s的配置信息\n", alias)
-				missingCfg = true
+		RunE: func(cmd *cobra.Command, args []string) error {
+			scm, sshAliasList, envMgrList, err := prepareAgentEnv(args)
+			if err != nil {
+				return err
 			}
-		}
-		if missingCfg {
-			return errors.New("存在未找到的机器配置")
-		}
+
 		for _, alias := range sshAliasList {
 			c := scm[alias]
 			for _, mgr := range envMgrList {
@@ -364,4 +314,36 @@ var agentDeployCmd = &cobra.Command{
 		}
 		return nil
 	},
+}
+
+// prepareAgentEnv loads env/ssh config and validates aliases.
+// Shared by check and deploy commands.
+func prepareAgentEnv(args []string) (scm map[string]*config.SSHConfig, aliases []string, envMgrs []envmgr.IEnvMgr, err error) {
+	ecm, err := config.GetEnvConfigMap()
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to get env config: %w", err)
+	}
+
+	scm, err = config.GetSSHConfigMap()
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to get ssh config: %w", err)
+	}
+
+	envAlias := args[1]
+	ec, find := ecm[envAlias]
+	if !find {
+		return nil, nil, nil, fmt.Errorf("未找到环境[%s]的配置信息", envAlias)
+	}
+
+	envMgrs = append(envMgrs, envmgr.NewEnvMgrDocker(ec))
+
+	aliases = strings.Split(args[0], ",")
+
+	for _, alias := range aliases {
+		if _, ok := scm[alias]; !ok {
+			log.Printf("未找到%s的配置信息\n", alias)
+			err = fmt.Errorf("存在未找到的机器配置")
+		}
+	}
+	return
 }
