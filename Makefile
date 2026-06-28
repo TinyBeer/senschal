@@ -45,95 +45,95 @@ all: gen fmt vet lint test build
 # 1. 依赖管理
 .PHONY: tidy
 tidy:
-	@echo "$(GREEN)=== 整理go mod依赖 ===$(END)"
+	@echo -e "$(GREEN)=== 整理go mod依赖 ===$(END)"
 	$(GO_MOD) tidy
 	$(GO_MOD) verify
 
 .PHONY: download
 download:
-	@echo "$(GREEN)=== 下载全部依赖 ===$(END)"
+	@echo -e "$(GREEN)=== 下载全部依赖 ===$(END)"
 	$(GO_MOD) download
 
 # 2. 代码生成 & 代码格式化 & 静态检查
 .PHONY: gen generate
 gen: generate # 别名
 generate: tidy
-	@echo "$(GREEN)=== go generate 自动生成代码 ===$(END)"
+	@echo -e "$(GREEN)=== go generate 自动生成代码 ===$(END)"
 	$(GO) generate ./...
 	# 生成后自动格式化生成的代码
 	$(GO_FMT) $(GO_FMT_FLAGS) ./...
 
 .PHONY: fmt
 fmt:
-	@echo "$(GREEN)=== 格式化代码 ===$(END)"
+	@echo -e "$(GREEN)=== 格式化代码 ===$(END)"
 	$(GO_FMT) $(GO_FMT_FLAGS) ./...
 
 .PHONY: vet
 vet:
-	@echo "$(GREEN)=== go vet 静态检查 ===$(END)"
+	@echo -e "$(GREEN)=== go vet 静态检查 ===$(END)"
 	$(GO_VET) -all ./...
 
 .PHONY: lint
 lint:
-	@echo "$(GREEN)=== golangci-lint 代码规范检查 ===$(END)"
+	@echo -e "$(GREEN)=== golangci-lint 代码规范检查 ===$(END)"
 	$(GOLINT) run ./...
 
 # 3. 单元测试
 .PHONY: test
 test:
-	@echo "$(GREEN)=== 执行单元测试 ===$(END)"
+	@echo -e "$(GREEN)=== 执行单元测试 ===$(END)"
 	$(GO_TEST) -v -race -coverprofile=$(OUT_DIR)/coverage.out ./...
 
 .PHONY: cover
 cover: test
-	@echo "$(GREEN)=== 生成覆盖率报告 ===$(END)"
+	@echo -e "$(GREEN)=== 生成覆盖率报告 ===$(END)"
 	$(GO) tool cover -html=$(OUT_DIR)/coverage.out
 
 # 4. 编译
 .PHONY: build
 build:
-	@echo "$(GREEN)=== 编译当前平台二进制 ===$(END)"
+	@echo -e "$(GREEN)=== 编译当前平台二进制 ===$(END)"
 	mkdir -p $(OUT_DIR)
 	CGO_ENABLED=$(CGO_ENABLED) $(GO_BUILD) $(BUILD_FLAGS) -o $(OUT_DIR)/$(APP_NAME) $(MAIN_FILE)
-	@echo "$(GREEN)输出: $(OUT_DIR)/$(APP_NAME)$(END)"
+	@echo -e "$(GREEN)输出: $(OUT_DIR)/$(APP_NAME)$(END)"
 
 .PHONY: cross
 cross:
-	@echo "$(GREEN)=== 全平台交叉编译 ===$(END)"
+	@echo -e "$(GREEN)=== 全平台交叉编译 ===$(END)"
 	mkdir -p $(OUT_DIR)
 	$(foreach platform,$(PLATFORMS),\
 		GOOS=$(word 1,$(subst /, ,$(platform))) \
 		GOARCH=$(word 2,$(subst /, ,$(platform))) \
 		CGO_ENABLED=$(CGO_ENABLED) \
 		$(GO_BUILD) $(BUILD_FLAGS) -o $(OUT_DIR)/$(APP_NAME)-$(subst /,-,$(platform))$(if $(findstring windows,$(platform)),.exe) $(MAIN_FILE);)
-	@echo "$(GREEN)输出目录: $(OUT_DIR)$(END)"
+	@echo -e "$(GREEN)输出目录: $(OUT_DIR)$(END)"
 
 # 5. 清理产物
 .PHONY: clean
 clean:
-	@echo "$(YELLOW)=== 清理编译产物 ===$(END)"
+	@echo -e "$(YELLOW)=== 清理编译产物 ===$(END)"
 	rm -rf $(OUT_DIR)
 
 # 6. 安装工具链
 .PHONY: install-tools
 install-tools:
-	@echo "$(GREEN)=== 安装开发工具 ===$(END)"
+	@echo -e "$(GREEN)=== 安装开发工具 ===$(END)"
 	$(foreach tool,$(TOOL_LIST),$(GO_INSTALL) $(tool);)
 
 # 帮助文档
 .PHONY: help
 help:
-	@echo "$(YELLOW)可用命令列表:$(END)"
-	@echo "  make tidy         整理&校验依赖"
-	@echo "  make download      下载全部依赖"
-	@echo "  make fmt          格式化代码"
-	@echo "  make vet          go vet 静态代码检查"
-	@echo "  make lint         golangci-lint 规范校验"
-	@echo "  make test         执行单元测试+覆盖率"
-	@echo "  make cover        打开html覆盖率报告"
-	@echo "  make build        编译当前系统二进制"
-	@echo "  make cross        全平台交叉编译"
-	@echo "  make clean        清理编译产物"
-	@echo "  make install-tools 安装开发工具"
-	@echo "  make gen          执行 go generate"
-	@echo "  make all          完整检查+编译流程"
+	@echo -e "$(YELLOW)可用命令列表:$(END)"
+	@echo -e "  make tidy         整理&校验依赖"
+	@echo -e "  make download      下载全部依赖"
+	@echo -e "  make fmt          格式化代码"
+	@echo -e "  make vet          go vet 静态代码检查"
+	@echo -e "  make lint         golangci-lint 规范校验"
+	@echo -e "  make test         执行单元测试+覆盖率"
+	@echo -e "  make cover        打开html覆盖率报告"
+	@echo -e "  make build        编译当前系统二进制"
+	@echo -e "  make cross        全平台交叉编译"
+	@echo -e "  make clean        清理编译产物"
+	@echo -e "  make install-tools 安装开发工具"
+	@echo -e "  make gen          执行 go generate"
+	@echo -e "  make all          完整检查+编译流程"
