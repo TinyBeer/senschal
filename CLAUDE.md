@@ -122,11 +122,11 @@ go mod tidy
 | `seneschal img edge <file.gif>`                 | 对 GIF 应用 Sobel 边缘检测                                                                 |
 | `seneschal env`                                 | 列出环境配置                                                                               |
 | `seneschal cp <src> <dst>`                      | 在本地和远程之间复制文件/目录，支持 `alias:path` 语法                                     |
-| `seneschal agent list`                          | 列出 SSH 代理（服务器）配置                                                                |
-| `seneschal agent up <aliases> <local> <remote>` | 上传文件/目录到多个代理，别名逗号分隔                                                      |
-| `seneschal agent down <alias> <remote> <local>` | 从代理下载文件/目录到本地                                                                  |
-| `seneschal agent check <aliases> <env>`         | 检查远程代理的环境状态                                                                     |
-| `seneschal agent deploy <aliases> <env>`        | 部署环境（Docker）到远程代理                                                               |
+| `seneschal host list`                           | 列出 SSH 主机（服务器）配置                                                                |
+| `seneschal host up <aliases> <local> <remote>`  | 上传文件/目录到多台主机，别名逗号分隔                                                      |
+| `seneschal host down <alias> <remote> <local>`  | 从主机下载文件/目录到本地                                                                  |
+| `seneschal host check <aliases> <env>`          | 检查远程主机的环境状态                                                                     |
+| `seneschal host deploy <aliases> <env>`         | 部署环境（Docker）到远程主机                                                               |
 | `seneschal todo [add/done/del]`                 | Todo 列表管理器，JSON 文件持久化                                                           |
 | `seneschal workout [-l] [name]`                 | 使用 Bubble Tea TUI 的运动计时器，CSV 配置运动计划                                         |
 
@@ -140,7 +140,7 @@ seneschal/
 │   ├── joy.go             # Joynova 项目与模板工具
 │   ├── img.go             # 图片处理（ASCII 艺术字、边缘检测）
 │   ├── env.go             # 环境列表
-│   ├── agent.go           # SSH 代理管理、检查、部署
+│   ├── host.go            # SSH 主机管理、检查、部署
 │   ├── cp.go              # 本地与远程之间复制文件/目录
 │   ├── todo.go            # Todo CRUD 命令
 │   ├── workout.go         # 运动命令
@@ -166,7 +166,7 @@ seneschal/
 │   │   ├── docker.go       # Docker 镜像拉取、保存与加载编排
 │   │   └── env_mgr/        # 环境管理器接口与实现
 │   │       ├── common.go   # IEnvMgr 接口（Check、Deploy）
-│   │       └── docker.go   # 在 SSH 代理上检查/部署 Docker
+│   │       └── docker.go   # 在 SSH 主机上检查/部署 Docker
 │   └── command/            # 命令业务实现
 │       ├── file/           # 文件子操作（模板、proto 代码注入）
 │       │   ├── const.go    # 文件扩展名、ReplaceProbe 枚举

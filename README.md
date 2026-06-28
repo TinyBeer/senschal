@@ -12,37 +12,37 @@
 
 ## 用法
 
-### 代理文件传输
+### 主机文件传输
 
 ```bash
-# 列出 SSH 代理配置
-seneschal agent list
+# 列出 SSH 主机配置
+seneschal host list
 
-# 上传文件到一台或多台代理（别名逗号分隔）
-seneschal agent up server1,server2 ./config.toml /tmp/config.toml
+# 上传文件到一台或多台主机（别名逗号分隔）
+seneschal host up server1,server2 ./config.toml /tmp/config.toml
 
 # 上传目录
-seneschal agent up server1 ./deploy/ /opt/app/
+seneschal host up server1 ./deploy/ /opt/app/
 
-# 从代理下载文件
-seneschal agent down server1 /var/log/app.log ./app.log
+# 从主机下载文件
+seneschal host down server1 /var/log/app.log ./app.log
 
-# 从代理下载目录
-seneschal agent down server1 /opt/data/ ./backup/
+# 从主机下载目录
+seneschal host down server1 /opt/data/ ./backup/
 
-# 代理间复制（任意组合：本地↔远程、远程↔远程）
-seneschal agent cp ./local.txt server1:/remote/path/
-seneschal agent cp server1:/src/file.txt server2:/dst/
+# 主机间复制（任意组合：本地↔远程、远程↔远程）
+seneschal cp ./local.txt server1:/remote/path/
+seneschal cp server1:/src/file.txt server2:/dst/
 ```
 
-### 代理环境管理
+### 主机环境管理
 
 ```bash
-# 检查代理环境状态
-seneschal agent check server1,server2 docker
+# 检查主机环境状态
+seneschal host check server1,server2 docker
 
 # 部署环境
-seneschal agent deploy server1,server2 docker
+seneschal host deploy server1,server2 docker
 ```
 
 ### 其他命令
@@ -61,7 +61,7 @@ seneschal workout -l                        # 运动计时器
 
 ### 优化
 
-- [x] 实现 agent up/down 文件上传下载命令
+- [x] 实现 host up/down 文件上传下载命令
 - [x] 实现 fsutil.CopyDir 目录递归拷贝
 - [x] 重构文件传输功能，优化代码结构
 - [x] 使用 `goph` 替换现有 `ssh` 客户端实现（放弃）。  

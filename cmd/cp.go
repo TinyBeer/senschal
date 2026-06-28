@@ -25,7 +25,7 @@ Examples:
   seneschal cp file.txt myserver:/remote/path/
   seneschal cp myserver:/remote/file.txt /local/path/
   seneschal cp file.txt /local/backup/`,
-	Example: "seneschal cp file.txt agent1:/tmp/",
+	Example: "seneschal cp file.txt host1:/tmp/",
 	Args:    cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		srcPath := args[0]

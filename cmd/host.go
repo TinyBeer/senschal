@@ -17,24 +17,24 @@ import (
 )
 
 func init() {
-	agentCmd.AddCommand(agentListCmd)
-	agentCmd.AddCommand(agentCheckCmd)
-	agentCmd.AddCommand(agentDeployCmd)
-	agentCmd.AddCommand(agentUpCmd)
-	agentCmd.AddCommand(agentDownCmd)
-	rootCmd.AddCommand(agentCmd)
+	hostCmd.AddCommand(hostListCmd)
+	hostCmd.AddCommand(hostCheckCmd)
+	hostCmd.AddCommand(hostDeployCmd)
+	hostCmd.AddCommand(hostUpCmd)
+	hostCmd.AddCommand(hostDownCmd)
+	rootCmd.AddCommand(hostCmd)
 }
 
-var agentCmd = &cobra.Command{
-	Use:     "agent",
-	Short:   "agent manager tool",
-	Example: "seneschal agent [list|check|deploy|up|down]",
+var hostCmd = &cobra.Command{
+	Use:     "host",
+	Short:   "host manager tool",
+	Example: "seneschal host [list|check|deploy|up|down]",
 }
 
-var agentListCmd = &cobra.Command{
+var hostListCmd = &cobra.Command{
 	Use:     "list",
-	Short:   "list agent",
-	Example: "seneschal agent list",
+	Short:   "list hosts",
+	Example: "seneschal host list",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		m, err := config.GetSSHConfigMap()
 		if err != nil {
@@ -54,16 +54,16 @@ var agentListCmd = &cobra.Command{
 	},
 }
 
-// agent upload file or dir
-var agentUpCmd = &cobra.Command{
+// host upload file or dir
+var hostUpCmd = &cobra.Command{
 	Use:   "up <alias1>[,alias2]... <local_path> <remote_path>",
-	Short: "upload file or dir to agent",
-	Long: `Upload file or directory to remote agent(s).
+	Short: "upload file or dir to host",
+	Long: `Upload file or directory to remote host(s).
 
 Directory behavior:
-  seneschal agent up s1 ./deploy /opt/app    → creates /opt/app/deploy/ on remote
-  seneschal agent up s1 ./deploy/* /opt/app  → copies contents directly into /opt/app/`,
-	Example: "seneschal agent up agent1,agent2 test.txt ops",
+  seneschal host up s1 ./deploy /opt/app    → creates /opt/app/deploy/ on remote
+  seneschal host up s1 ./deploy/* /opt/app  → copies contents directly into /opt/app/`,
+	Example: "seneschal host up host1,host2 test.txt ops",
 	Args:    cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		aliases := strings.Split(args[0], ",")
@@ -155,16 +155,16 @@ Directory behavior:
 	},
 }
 
-// agent download file or dir
-var agentDownCmd = &cobra.Command{
+// host download file or dir
+var hostDownCmd = &cobra.Command{
 	Use:   "down <alias> <remote_path> <local_path>",
-	Short: "download file or dir from agent",
-	Long: `Download file or directory from remote agent.
+	Short: "download file or dir from host",
+	Long: `Download file or directory from remote host.
 
 Directory behavior:
-  seneschal agent down s1 /opt/data ./backup    → creates ./backup/data/ locally
-  seneschal agent down s1 /opt/data/* ./backup  → copies contents directly into ./backup/`,
-	Example: "seneschal agent down agent test.txt .",
+  seneschal host down s1 /opt/data ./backup    → creates ./backup/data/ locally
+  seneschal host down s1 /opt/data/* ./backup  → copies contents directly into ./backup/`,
+	Example: "seneschal host down host1 test.txt .",
 	Args:    cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alias := args[0]
@@ -244,14 +244,14 @@ Directory behavior:
 	},
 }
 
-// agent check env
-var agentCheckCmd = &cobra.Command{
+// host check env
+var hostCheckCmd = &cobra.Command{
 	Use:     "check <alias1>[,alias2]... <env>",
-	Short:   "check agent environment",
-	Example: "seneschal agent check <alias1,alias2> <env>",
+	Short:   "check host environment",
+	Example: "seneschal host check <alias1,alias2> <env>",
 	Args:    cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			scm, sshAliasList, envMgrList, err := prepareAgentEnv(args)
+			scm, sshAliasList, envMgrList, err := prepareHostEnv(args)
 			if err != nil {
 				return err
 			}
@@ -290,14 +290,14 @@ var agentCheckCmd = &cobra.Command{
 	},
 }
 
-// agent deploy
-var agentDeployCmd = &cobra.Command{
+// host deploy
+var hostDeployCmd = &cobra.Command{
 	Use:     "deploy <alias1>[,alias2]... <env>",
-	Short:   "deploy env on selected agent",
-	Example: "seneschal agent deploy <alias1,alias2> <env>",
+	Short:   "deploy env on selected host",
+	Example: "seneschal host deploy <alias1,alias2> <env>",
 	Args:    cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			scm, sshAliasList, envMgrList, err := prepareAgentEnv(args)
+			scm, sshAliasList, envMgrList, err := prepareHostEnv(args)
 			if err != nil {
 				return err
 			}
@@ -316,9 +316,9 @@ var agentDeployCmd = &cobra.Command{
 	},
 }
 
-// prepareAgentEnv loads env/ssh config and validates aliases.
+// prepareHostEnv loads env/ssh config and validates aliases.
 // Shared by check and deploy commands.
-func prepareAgentEnv(args []string) (scm map[string]*config.SSHConfig, aliases []string, envMgrs []envmgr.IEnvMgr, err error) {
+func prepareHostEnv(args []string) (scm map[string]*config.SSHConfig, aliases []string, envMgrs []envmgr.IEnvMgr, err error) {
 	ecm, err := config.GetEnvConfigMap()
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to get env config: %w", err)
