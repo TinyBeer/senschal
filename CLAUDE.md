@@ -199,9 +199,12 @@ seneschal/
 
 ## 关键设计模式
 
-### 配置加载
+### 配置加载（读写）
 
-所有配置类型（SSH、Env、Project）遵循相同模式：TOML 文件存放在 `data/conf/` 子目录中，通过 `viper` 加载，使用 `file.ListFileNameWithExt()` + `read*FromToml()` 函数，返回以别名为键的 map。
+TOML 配置文件存放在 `data/conf/<type>/` 中。
+
+- **读取**：`viper` + `file.ListFileNameWithExt()` + `read*FromToml()`，返回 `map[string]*Config`
+- **写入**：`mapstructure.Decode` 将结构体拍平为 map，`viper.WriteConfigAs()` 写出。函数命名 `Write*Config()`，参见 `config/ssh.go:WriteSSHConfig`
 
 ### 统一的本地/远程路径
 

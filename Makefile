@@ -12,7 +12,7 @@ TOOL_LIST := \
 	golang.org/x/tools/cmd/stringer@v0.35.0\
 	mvdan.cc/gofumpt@v0.10.0
 
-.PHONY: gen build clean format tools test
+.PHONY: gen build clean format tools test vet
 
 # 安装所有依赖插件
 tools:
@@ -23,15 +23,19 @@ tools:
 gen: 
 	@go generate ./...
 
-format: 
+format:
 	@gofumpt -w --extra .
+	
+# 静态检查
+vet:
+	@go vet ./...
 
 # 编译项目
-build: format gen
+build: format gen vet
 	@go build -o $(BUILD_DIR)/$(APP_NAME) .
 
 # 测试
-test: format gen
+test: format gen vet
 	@go test -cover --count=1 ./...
 
 clean:
