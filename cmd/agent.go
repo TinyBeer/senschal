@@ -29,7 +29,7 @@ func init() {
 var agentCmd = &cobra.Command{
 	Use:     "agent",
 	Short:   "agent manager tool",
-	Example: "seneschal agent [list|cp|check|deploy]",
+	Example: "seneschal agent [list|check|deploy|up|down]",
 }
 
 var agentListCmd = &cobra.Command{

@@ -121,8 +121,8 @@ go mod tidy
 | `seneschal img text <file>`                     | 图片转 ASCII 艺术字（参数：`-W` 宽度，`-H` 高度，`-V` 反转，`-C` ANSI 颜色）               |
 | `seneschal img edge <file.gif>`                 | 对 GIF 应用 Sobel 边缘检测                                                                 |
 | `seneschal env`                                 | 列出环境配置                                                                               |
+| `seneschal cp <src> <dst>`                      | 在本地和远程之间复制文件/目录，支持 `alias:path` 语法                                     |
 | `seneschal agent list`                          | 列出 SSH 代理（服务器）配置                                                                |
-| `seneschal agent cp <src> <dst>`                | 在代理间复制文件（本地或远程，支持 `alias:path` 语法）                                     |
 | `seneschal agent up <aliases> <local> <remote>` | 上传文件/目录到多个代理，别名逗号分隔                                                      |
 | `seneschal agent down <alias> <remote> <local>` | 从代理下载文件/目录到本地                                                                  |
 | `seneschal agent check <aliases> <env>`         | 检查远程代理的环境状态                                                                     |
@@ -141,6 +141,7 @@ seneschal/
 │   ├── img.go             # 图片处理（ASCII 艺术字、边缘检测）
 │   ├── env.go             # 环境列表
 │   ├── agent.go           # SSH 代理管理、检查、部署
+│   ├── cp.go              # 本地与远程之间复制文件/目录
 │   ├── todo.go            # Todo CRUD 命令
 │   ├── workout.go         # 运动命令
 │   └── test.go            # 开发测试沙盒
@@ -162,8 +163,6 @@ seneschal/
 │   ├── runner/             # 执行逻辑，与命令解耦
 │   │   ├── exec.go         # 通过 os/exec 执行本地命令
 │   │   ├── ssh.go          # SSH 客户端、会话管理、断点续传
-│   │   ├── file.go         # 统一的本地/远程 Path 与 File 抽象
-│   │   ├── file_op.go      # 通过 SSH 在本地<->远程之间复制文件/目录
 │   │   ├── docker.go       # Docker 镜像拉取、保存与加载编排
 │   │   └── env_mgr/        # 环境管理器接口与实现
 │   │       ├── common.go   # IEnvMgr 接口（Check、Deploy）
@@ -205,7 +204,7 @@ seneschal/
 
 ### 统一的本地/远程路径
 
-`internal/runner.Path` 和 `internal/runner.File` 通过 `alias:path` 地址方案（例如 `myserver:/tmp/file.txt`）支持无缝的本地和 SSH 远程操作。SSH 配置在运行时根据别名查找 — 参见 `internal/runner/file.go`、`internal/runner/file_op.go`、`internal/runner/ssh.go`。
+`internal/fsutil.PathRef` 通过 `alias:path` 地址方案（例如 `myserver:/tmp/file.txt`）支持无缝的本地和 SSH 远程操作。通过 `fsutil.Parse()` 解析路径，`fsutil.GetFS()` 获取对应的文件系统接口。参见 `internal/fsutil/core.go`、`internal/fsutil/sshfs.go`。
 
 ### 通过探针标记进行代码注入
 
@@ -223,4 +222,4 @@ seneschal/
 
 - **配置格式**：SSH/project/env 配置使用 TOML；运动计划使用 CSV；Todo 持久化使用 JSON
 - **配置目录**：`data/conf/<type>/`，其中 type 为 `env`、`project`、`ssh`、`workout`
-- **远程路径格式**：`ssh_alias:/path/to/file` — `runner.NewPath()` 和 `runner.NewFile()` 解析此格式
+- **远程路径格式**：`ssh_alias:/path/to/file` — `fsutil.Parse()` 解析此格式
