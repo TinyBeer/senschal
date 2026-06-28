@@ -1,42 +1,139 @@
-APP_NAME = seneschal
-BUILD_DIR = build
+APP_NAME  = seneschal
+MAIN_FILE = .
+OUT_DIR   = out
 
-# Go 基础环境配置
-GO := go
-GO_MOD := $(GO) mod
-GO_INSTALL := $(GO) install
-GO_GENERATE := $(GO) generate
+# Go 环境变量
+GO           := go
+GO_INSTALL   := $(GO) install
+GO_MOD       := $(GO) mod
+GO_BUILD     := $(GO) build
+GO_TEST      := $(GO) test
+GO_VET       := $(GO) vet
+GO_FMT       := $(GO) gofumpt
+GO_FMT_FLAGS := -w --extra
+GOLINT       := golangci-lint
+
+# 编译参数
+CGO_ENABLED  := 0
+BUILD_FLAGS  := -ldflags "-s -w"
+# LDFLAGS_VERSION := -X $(MODULE_PATH)/internal/version.Version=$(shell git describe --tags --always)
 
 # 工具定义：path@version
 TOOL_LIST := \
-	golang.org/x/tools/cmd/stringer@v0.35.0\
-	mvdan.cc/gofumpt@v0.10.0
+	golang.org/x/tools/cmd/stringer@v0.35.0 \
+	mvdan.cc/gofumpt@v0.10.0 \
+	github.com/golangci/golangci-lint@v1.64.8
 
-.PHONY: gen build clean format tools test vet
+# 交叉编译目标平台
+PLATFORMS := \
+	linux/amd64 \
+	linux/arm64 \
+	darwin/amd64 \
+	darwin/arm64 \
+	windows/amd64
 
-# 安装所有依赖插件
-tools:
-# 	@echo "=== 开始安装依赖工具 ==="
-	$(foreach tool,$(TOOL_LIST),$(GO_INSTALL) $(tool);)
-# 	@echo "=== 依赖工具安装完成 ==="
+# 颜色输出
+RED    := \033[31m
+GREEN  := \033[32m
+YELLOW := \033[33m
+END    := \033[0m
 
-gen: 
-	@go generate ./...
+# 默认目标：编译当前系统二进制
+.PHONY: all
+all: gen fmt vet lint test build
 
-format:
-	@gofumpt -w --extra .
-	
-# 静态检查
+# 1. 依赖管理
+.PHONY: tidy
+tidy:
+	@echo "$(GREEN)=== 整理go mod依赖 ===$(END)"
+	$(GO_MOD) tidy
+	$(GO_MOD) verify
+
+.PHONY: download
+download:
+	@echo "$(GREEN)=== 下载全部依赖 ===$(END)"
+	$(GO_MOD) download
+
+# 2. 代码生成 & 代码格式化 & 静态检查
+.PHONY: gen generate
+gen: generate # 别名
+generate: tidy
+	@echo "$(GREEN)=== go generate 自动生成代码 ===$(END)"
+	$(GO) generate ./...
+	# 生成后自动格式化生成的代码
+	$(GO_FMT) $(GO_FMT_FLAGS) ./...
+
+.PHONY: fmt
+fmt:
+	@echo "$(GREEN)=== 格式化代码 ===$(END)"
+	$(GO_FMT) $(GO_FMT_FLAGS) ./...
+
+.PHONY: vet
 vet:
-	@go vet ./...
+	@echo "$(GREEN)=== go vet 静态检查 ===$(END)"
+	$(GO_VET) -all ./...
 
-# 编译项目
-build: format gen vet
-	@go build -o $(BUILD_DIR)/$(APP_NAME) .
+.PHONY: lint
+lint:
+	@echo "$(GREEN)=== golangci-lint 代码规范检查 ===$(END)"
+	$(GOLINT) run ./...
 
-# 测试
-test: format gen vet
-	@go test -cover --count=1 ./...
+# 3. 单元测试
+.PHONY: test
+test:
+	@echo "$(GREEN)=== 执行单元测试 ===$(END)"
+	$(GO_TEST) -v -race -coverprofile=$(OUT_DIR)/coverage.out ./...
 
+.PHONY: cover
+cover: test
+	@echo "$(GREEN)=== 生成覆盖率报告 ===$(END)"
+	$(GO) tool cover -html=$(OUT_DIR)/coverage.out
+
+# 4. 编译
+.PHONY: build
+build:
+	@echo "$(GREEN)=== 编译当前平台二进制 ===$(END)"
+	mkdir -p $(OUT_DIR)
+	CGO_ENABLED=$(CGO_ENABLED) $(GO_BUILD) $(BUILD_FLAGS) -o $(OUT_DIR)/$(APP_NAME) $(MAIN_FILE)
+	@echo "$(GREEN)输出: $(OUT_DIR)/$(APP_NAME)$(END)"
+
+.PHONY: cross
+cross:
+	@echo "$(GREEN)=== 全平台交叉编译 ===$(END)"
+	mkdir -p $(OUT_DIR)
+	$(foreach platform,$(PLATFORMS),\
+		GOOS=$(word 1,$(subst /, ,$(platform))) \
+		GOARCH=$(word 2,$(subst /, ,$(platform))) \
+		CGO_ENABLED=$(CGO_ENABLED) \
+		$(GO_BUILD) $(BUILD_FLAGS) -o $(OUT_DIR)/$(APP_NAME)-$(subst /,-,$(platform))$(if $(findstring windows,$(platform)),.exe) $(MAIN_FILE);)
+	@echo "$(GREEN)输出目录: $(OUT_DIR)$(END)"
+
+# 5. 清理产物
+.PHONY: clean
 clean:
-	@rm -rf $(BUILD_DIR)
+	@echo "$(YELLOW)=== 清理编译产物 ===$(END)"
+	rm -rf $(OUT_DIR)
+
+# 6. 安装工具链
+.PHONY: install-tools
+install-tools:
+	@echo "$(GREEN)=== 安装开发工具 ===$(END)"
+	$(foreach tool,$(TOOL_LIST),$(GO_INSTALL) $(tool);)
+
+# 帮助文档
+.PHONY: help
+help:
+	@echo "$(YELLOW)可用命令列表:$(END)"
+	@echo "  make tidy         整理&校验依赖"
+	@echo "  make download      下载全部依赖"
+	@echo "  make fmt          格式化代码"
+	@echo "  make vet          go vet 静态代码检查"
+	@echo "  make lint         golangci-lint 规范校验"
+	@echo "  make test         执行单元测试+覆盖率"
+	@echo "  make cover        打开html覆盖率报告"
+	@echo "  make build        编译当前系统二进制"
+	@echo "  make cross        全平台交叉编译"
+	@echo "  make clean        清理编译产物"
+	@echo "  make install-tools 安装开发工具"
+	@echo "  make gen          执行 go generate"
+	@echo "  make all          完整检查+编译流程"
