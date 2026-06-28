@@ -168,7 +168,7 @@ func parseVersion(v string) ([]int, error) {
 
 // Deploy implements IEnvMgr.
 func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
-	if e.cnf == nil && !e.cnf.Enable {
+	if e.cnf == nil || !e.cnf.Enable {
 		return nil
 	}
 	se, err := runner.NewSSHExecutor(c)
