@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"log"
+	"os"
 	"path"
 	"path/filepath"
 	"reflect"
@@ -17,6 +19,13 @@ import (
 )
 
 func init() {
+	hostAddCmd.Flags().StringP("user", "u", "", "ssh user")
+	hostAddCmd.Flags().String("host", "", "ssh host address")
+	hostAddCmd.Flags().IntP("port", "p", 22, "ssh port (default 22)")
+	hostAddCmd.Flags().String("password", "", "ssh password")
+	hostAddCmd.Flags().String("private", "", "ssh private key file path")
+
+	hostCmd.AddCommand(hostAddCmd)
 	hostCmd.AddCommand(hostListCmd)
 	hostCmd.AddCommand(hostCheckCmd)
 	hostCmd.AddCommand(hostDeployCmd)
@@ -29,6 +38,91 @@ var hostCmd = &cobra.Command{
 	Use:     "host",
 	Short:   "host manager tool",
 	Example: "seneschal host [list|check|deploy|up|down]",
+}
+
+var hostAddCmd = &cobra.Command{
+	Use:   "add <alias>",
+	Short: "add host config",
+	Example: "seneschal host add myserver -u root --host 192.168.1.100 -p 22 " +
+		"--password mypassword\n" +
+		"  seneschal host add myserver -u root --host 192.168.1.100 --private ~/.ssh/id_rsa",
+	Args: cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		alias := args[0]
+
+		user, _ := cmd.Flags().GetString("user")
+		host, _ := cmd.Flags().GetString("host")
+		port, _ := cmd.Flags().GetInt("port")
+		password, _ := cmd.Flags().GetString("password")
+		privateKey, _ := cmd.Flags().GetString("private")
+
+		if user == "" {
+			return fmt.Errorf("user is required (--user / -u)")
+		}
+		if host == "" {
+			return fmt.Errorf("host is required (--host)")
+		}
+		if password == "" && privateKey == "" {
+			return fmt.Errorf("password (--password) or private key (--private) is required")
+		}
+
+		// 确定认证方式
+		var method config.SSHAuthMethod
+		var privateKeyPath string
+
+		if privateKey != "" {
+			method = config.SSHAuthMethod_KEY
+
+			// 确保 SSH_KEY_DIR 存在
+			if err := os.MkdirAll(config.SSH_KEY_DIR, 0o700); err != nil {
+				return fmt.Errorf("failed to create ssh key dir %s: %w", config.SSH_KEY_DIR, err)
+			}
+
+			// 拷贝密钥文件到 SSH_KEY_DIR
+			keyFileName := filepath.Base(privateKey)
+			dstKeyPath := filepath.Join(config.SSH_KEY_DIR, keyFileName)
+
+			srcFile, err := os.Open(privateKey)
+			if err != nil {
+				return fmt.Errorf("failed to open private key %s: %w", privateKey, err)
+			}
+			defer srcFile.Close()
+
+			dstFile, err := os.OpenFile(dstKeyPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+			if err != nil {
+				return fmt.Errorf("failed to create key file %s: %w", dstKeyPath, err)
+			}
+			defer dstFile.Close()
+
+			if _, err := io.Copy(dstFile, srcFile); err != nil {
+				return fmt.Errorf("failed to copy private key: %w", err)
+			}
+
+			privateKeyPath = dstKeyPath
+			log.Printf("private key copied to %s\n", dstKeyPath)
+		} else {
+			method = config.SSHAuthMethod_PW
+		}
+
+		// 写入配置文件
+		cfg := &config.SSHConfig{
+			Alias: alias,
+			SSH: &config.SSH{
+				User:       user,
+				Host:       host,
+				Port:       port,
+				Method:     method,
+				Password:   password,
+				PrivateKey: privateKeyPath,
+			},
+		}
+		if err := config.WriteSSHConfig(cfg); err != nil {
+			return err
+		}
+
+		log.Printf("SSH config for %s saved\n", alias)
+		return nil
+	},
 }
 
 var hostListCmd = &cobra.Command{
@@ -250,12 +344,11 @@ var hostCheckCmd = &cobra.Command{
 	Short:   "check host environment",
 	Example: "seneschal host check <alias1,alias2> <env>",
 	Args:    cobra.ExactArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			scm, sshAliasList, envMgrList, err := prepareHostEnv(args)
-			if err != nil {
-				return err
-			}
-
+	RunE: func(cmd *cobra.Command, args []string) error {
+		scm, sshAliasList, envMgrList, err := prepareHostEnv(args)
+		if err != nil {
+			return err
+		}
 
 		var data [][]string
 		tblHead := []string{"alias"}
@@ -296,11 +389,11 @@ var hostDeployCmd = &cobra.Command{
 	Short:   "deploy env on selected host",
 	Example: "seneschal host deploy <alias1,alias2> <env>",
 	Args:    cobra.ExactArgs(2),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			scm, sshAliasList, envMgrList, err := prepareHostEnv(args)
-			if err != nil {
-				return err
-			}
+	RunE: func(cmd *cobra.Command, args []string) error {
+		scm, sshAliasList, envMgrList, err := prepareHostEnv(args)
+		if err != nil {
+			return err
+		}
 
 		for _, alias := range sshAliasList {
 			c := scm[alias]
@@ -345,5 +438,5 @@ func prepareHostEnv(args []string) (scm map[string]*config.SSHConfig, aliases []
 			err = fmt.Errorf("存在未找到的机器配置")
 		}
 	}
-	return
+	return scm, aliases, envMgrs, err
 }

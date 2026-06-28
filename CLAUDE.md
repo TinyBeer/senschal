@@ -122,6 +122,7 @@ go mod tidy
 | `seneschal img edge <file.gif>`                 | 对 GIF 应用 Sobel 边缘检测                                                                 |
 | `seneschal env`                                 | 列出环境配置                                                                               |
 | `seneschal cp <src> <dst>`                      | 在本地和远程之间复制文件/目录，支持 `alias:path` 语法                                     |
+| `seneschal host add <alias>`                    | 添加 SSH 主机配置（支持密码/密钥认证）                                                     |
 | `seneschal host list`                           | 列出 SSH 主机（服务器）配置                                                                |
 | `seneschal host up <aliases> <local> <remote>`  | 上传文件/目录到多台主机，别名逗号分隔                                                      |
 | `seneschal host down <alias> <remote> <local>`  | 从主机下载文件/目录到本地                                                                  |
