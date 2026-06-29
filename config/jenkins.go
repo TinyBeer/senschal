@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
 	"seneschal/internal/command/file"
 
 	"github.com/go-viper/mapstructure/v2"

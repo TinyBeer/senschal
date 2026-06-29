@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+
 	"seneschal/config"
 	"seneschal/pkg/util"
 
@@ -50,10 +51,21 @@ var jenkinsListCmd = &cobra.Command{
 	Short:   "simply list jenkins jobs",
 	Long:    "simply list jenkins jobs with name",
 	Example: "senechal jenkins list alias",
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		jenkins := gojenkins.CreateJenkins(nil, Jenkins_Base, Jenkins_Account, Jenkins_Password)
+		alias := args[0]
+		jcm, err := config.GetJenkinsConfigMap()
+		if err != nil {
+			return fmt.Errorf("failed to get jenkins config map, err: %w", err)
+		}
+		jc, ok := jcm[alias]
+		if !ok {
+			return fmt.Errorf("missing jenkins config of %s", alias)
+		}
+
+		jenkins := gojenkins.CreateJenkins(nil, jc.Host, jc.UserName, jc.Password)
 		ctx := context.Background()
-		_, err := jenkins.Init(ctx)
+		_, err = jenkins.Init(ctx)
 		if err != nil {
 			return fmt.Errorf("connect to jenkins failed, err: %w", err)
 		}
@@ -103,4 +115,5 @@ var jenkinsAddCmd = &cobra.Command{
 		}
 		log.Printf("jenkins config [%s] saved successfully", alias)
 		return nil
-	}}
+	},
+}
