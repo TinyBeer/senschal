@@ -79,8 +79,12 @@ lint:
 	$(GOLINT) run ./...
 
 # 3. 单元测试
+.PHONY: mk_out
+mk_out:
+	@mkdir -p $(OUT_DIR)
+
 .PHONY: test
-test:
+test: mk_out
 	@echo -e "$(GREEN)=== 执行单元测试 ===$(END)"
 	$(GO_TEST) -v -race -coverprofile=$(OUT_DIR)/coverage.out ./...
 
@@ -91,14 +95,14 @@ cover: test
 
 # 4. 编译
 .PHONY: build
-build:
+build: mk_out
 	@echo -e "$(GREEN)=== 编译当前平台二进制 ===$(END)"
 	mkdir -p $(OUT_DIR)
 	CGO_ENABLED=$(CGO_ENABLED) $(GO_BUILD) $(BUILD_FLAGS) -o $(OUT_DIR)/$(APP_NAME) $(MAIN_FILE)
 	@echo -e "$(GREEN)输出: $(OUT_DIR)/$(APP_NAME)$(END)"
 
 .PHONY: cross
-cross:
+cross: mk_out
 	@echo -e "$(GREEN)=== 全平台交叉编译 ===$(END)"
 	mkdir -p $(OUT_DIR)
 	$(foreach platform,$(PLATFORMS),\
