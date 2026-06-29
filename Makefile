@@ -9,8 +9,8 @@ GO_MOD       := $(GO) mod
 GO_BUILD     := $(GO) build
 GO_TEST      := $(GO) test
 GO_VET       := $(GO) vet
-GO_FMT       := $(GO) gofumpt
-GO_FMT_FLAGS := -w --extra
+GO_FMT       := gofumpt
+GO_FMT_FLAGS := -w -extra
 GOLINT       := golangci-lint
 
 # 编译参数
@@ -61,12 +61,12 @@ generate: tidy
 	@echo -e "$(GREEN)=== go generate 自动生成代码 ===$(END)"
 	$(GO) generate ./...
 	# 生成后自动格式化生成的代码
-	$(GO_FMT) $(GO_FMT_FLAGS) ./...
+	$(GO_FMT) $(GO_FMT_FLAGS) .
 
 .PHONY: fmt
 fmt:
 	@echo -e "$(GREEN)=== 格式化代码 ===$(END)"
-	$(GO_FMT) $(GO_FMT_FLAGS) ./...
+	$(GO_FMT) $(GO_FMT_FLAGS) .
 
 .PHONY: vet
 vet:
