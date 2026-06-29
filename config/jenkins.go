@@ -2,12 +2,9 @@ package config
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"seneschal/internal/command/file"
 
-	"github.com/go-viper/mapstructure/v2"
 	"github.com/spf13/viper"
 )
 
@@ -38,7 +35,7 @@ func getJenkinsConfigMap(dir string) (map[string]*Jenkins, error) {
 			alias = c.Alias
 		}
 		if _, has := m[alias]; has {
-			return nil, fmt.Errorf("duplicated env alias[%s]", alias)
+			return nil, fmt.Errorf("duplicated jenkins alias[%s]", alias)
 		}
 		m[alias] = c
 	}
@@ -65,46 +62,10 @@ func readJenkinsConfigFromToml(dir, name string) (*Jenkins, error) {
 	return config, nil
 }
 
-// WriteSSHConfig 通过 viper 将 Jenkins 配置写入 TOML 文件
+// WriteJenkinsConfig 通过 viper 将 Jenkins 配置写入 TOML 文件
 func WriteJenkinsConfig(cfg *Jenkins) error {
 	if cfg.UserName == "" || cfg.Password == "" {
 		return fmt.Errorf("jenkins config missing user name or password")
 	}
-
-	var m map[string]any
-	if err := mapstructure.Decode(cfg, &m); err != nil {
-		return fmt.Errorf("decode jenkins config: %w", err)
-	}
-
-	v := viper.New()
-	v.SetConfigName(cfg.Alias)
-	v.SetConfigType(file.Ext_TOML)
-	v.AddConfigPath(JenkinsConfigDir)
-
-	for k, val := range m {
-		if sub, ok := val.(map[string]any); ok {
-			for sk, sv := range sub {
-				if s, ok := sv.(string); ok && s == "" {
-					continue
-				}
-				if sv != nil {
-					v.Set(k+"."+sk, sv)
-				}
-			}
-		} else {
-			if val != nil {
-				v.Set(k, val)
-			}
-		}
-	}
-
-	if err := os.MkdirAll(JenkinsConfigDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create jenkins config dir: %w", err)
-	}
-
-	cfgPath := filepath.Join(JenkinsConfigDir, cfg.Alias+".toml")
-	if err := v.WriteConfigAs(cfgPath); err != nil {
-		return fmt.Errorf("failed to write jenkins config: %w", err)
-	}
-	return nil
+	return writeConfigToToml(cfg, JenkinsConfigDir, cfg.Alias, "jenkins")
 }

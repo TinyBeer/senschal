@@ -29,10 +29,57 @@ func init() {
 	rootCmd.AddCommand(jenkinsCmd)
 }
 
+// getJenkinsClient 根据 alias 获取 Jenkins 配置并建立连接
+func getJenkinsClient(alias string) (*gojenkins.Jenkins, context.Context, error) {
+	jcm, err := config.GetJenkinsConfigMap()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get jenkins config map, err: %w", err)
+	}
+	jc, ok := jcm[alias]
+	if !ok {
+		return nil, nil, fmt.Errorf("missing jenkins config of %s", alias)
+	}
+
+	jenkins := gojenkins.CreateJenkins(nil, jc.Host, jc.UserName, jc.Password)
+	ctx := context.Background()
+	_, err = jenkins.Init(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("connect to jenkins failed, err: %w", err)
+	}
+	log.Printf("connected to jenkins successfully")
+	return jenkins, ctx, nil
+}
+
+// ensureJob 检查 job 是否存在，根据 overwrite 决定创建或更新
+func ensureJob(ctx context.Context, jenkins *gojenkins.Jenkins, uniqueTbl map[string]struct{}, jobName, xmlContent string, overwrite bool) error {
+	if _, exists := uniqueTbl[jobName]; exists {
+		if !overwrite {
+			log.Printf("job [%s] already exists, skip", jobName)
+			return nil
+		}
+		job, err := jenkins.GetJob(ctx, jobName)
+		if err != nil {
+			return fmt.Errorf("failed to get existing job [%s], err: %w", jobName, err)
+		}
+		if err = job.UpdateConfig(ctx, xmlContent); err != nil {
+			return fmt.Errorf("failed to update job [%s], err: %w", jobName, err)
+		}
+		log.Printf("job [%s] updated successfully", jobName)
+		return nil
+	}
+
+	_, err := jenkins.CreateJob(ctx, xmlContent, jobName)
+	if err != nil {
+		return fmt.Errorf("failed to create job [%s], err: %w", jobName, err)
+	}
+	log.Printf("job [%s] created successfully", jobName)
+	return nil
+}
+
 var jenkinsCmd = &cobra.Command{
 	Use:     "jenkins",
 	Short:   "list jenkins config",
-	Example: "senechal jenkins",
+	Example: "seneschal jenkins",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		jcm, err := config.GetJenkinsConfigMap()
 		if err != nil {
@@ -52,26 +99,13 @@ var jenkinsListCmd = &cobra.Command{
 	Use:     "list <alias>",
 	Short:   "simply list jenkins jobs",
 	Long:    "simply list jenkins jobs with name",
-	Example: "senechal jenkins list alias",
+	Example: "seneschal jenkins list alias",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		alias := args[0]
-		jcm, err := config.GetJenkinsConfigMap()
+		jenkins, ctx, err := getJenkinsClient(args[0])
 		if err != nil {
-			return fmt.Errorf("failed to get jenkins config map, err: %w", err)
+			return err
 		}
-		jc, ok := jcm[alias]
-		if !ok {
-			return fmt.Errorf("missing jenkins config of %s", alias)
-		}
-
-		jenkins := gojenkins.CreateJenkins(nil, jc.Host, jc.UserName, jc.Password)
-		ctx := context.Background()
-		_, err = jenkins.Init(ctx)
-		if err != nil {
-			return fmt.Errorf("connect to jenkins failed, err: %w", err)
-		}
-		log.Printf("connect to jenkins succeed!")
 
 		innerJobs, err := jenkins.GetAllJobNames(ctx)
 		if err != nil {
@@ -131,23 +165,10 @@ var jenkinsCreateCmd = &cobra.Command{
 	Example: "  seneschal jenkins create myjenkins --name myJob --file ./job.xml\n  seneschal jenkins create myjenkins --dir ./jobs",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		alias := args[0]
-		jcm, err := config.GetJenkinsConfigMap()
+		jenkins, ctx, err := getJenkinsClient(args[0])
 		if err != nil {
-			return fmt.Errorf("failed to get jenkins config map, err: %w", err)
+			return err
 		}
-		jc, ok := jcm[alias]
-		if !ok {
-			return fmt.Errorf("missing jenkins config of %s", alias)
-		}
-
-		jenkins := gojenkins.CreateJenkins(nil, jc.Host, jc.UserName, jc.Password)
-		ctx := context.Background()
-		_, err = jenkins.Init(ctx)
-		if err != nil {
-			return fmt.Errorf("connect to jenkins failed, err: %w", err)
-		}
-		log.Printf("connect to jenkins succeed!")
 
 		innerJobs, err := jenkins.GetAllJobNames(ctx)
 		if err != nil {
@@ -182,27 +203,9 @@ var jenkinsCreateCmd = &cobra.Command{
 				return fmt.Errorf("failed to read xml config file, err: %w", err)
 			}
 
-			if _, exists := uniqueTbl[jobName]; exists {
-				if overwrite {
-					job, err := jenkins.GetJob(ctx, jobName)
-					if err != nil {
-						return fmt.Errorf("failed to get existing job [%s], err: %w", jobName, err)
-					}
-					if err = job.UpdateConfig(ctx, string(xmlContent)); err != nil {
-						return fmt.Errorf("failed to update job [%s], err: %w", jobName, err)
-					}
-					log.Printf("job [%s] updated successfully", jobName)
-					return nil
-				}
-				log.Printf("job [%s] already exists, skip", jobName)
-				return nil
+			if err = ensureJob(ctx, jenkins, uniqueTbl, jobName, string(xmlContent), overwrite); err != nil {
+				return err
 			}
-
-			_, err = jenkins.CreateJob(ctx, string(xmlContent), jobName)
-			if err != nil {
-				return fmt.Errorf("failed to create job [%s], err: %w", jobName, err)
-			}
-			log.Printf("job [%s] created successfully", jobName)
 		} else {
 			entries, err := os.ReadDir(dirPath)
 			if err != nil {
@@ -228,30 +231,10 @@ var jenkinsCreateCmd = &cobra.Command{
 					continue
 				}
 
-				if _, exists := uniqueTbl[jobName]; exists {
-					if overwrite {
-						job, err := jenkins.GetJob(ctx, jobName)
-						if err != nil {
-							log.Printf("failed to get existing job [%s], err: %v", jobName, err)
-							continue
-						}
-						if err = job.UpdateConfig(ctx, string(xmlContent)); err != nil {
-							log.Printf("failed to update job [%s], err: %v", jobName, err)
-							continue
-						}
-						log.Printf("job [%s] updated successfully", jobName)
-						continue
-					}
-					log.Printf("job [%s] already exists, skip", jobName)
+				if err = ensureJob(ctx, jenkins, uniqueTbl, jobName, string(xmlContent), overwrite); err != nil {
+					log.Printf("%v, skip", err)
 					continue
 				}
-
-				_, err = jenkins.CreateJob(ctx, string(xmlContent), jobName)
-				if err != nil {
-					log.Printf("failed to create job [%s], err: %v", jobName, err)
-					continue
-				}
-				log.Printf("job [%s] created successfully", jobName)
 			}
 		}
 

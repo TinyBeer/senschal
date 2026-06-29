@@ -97,14 +97,12 @@ cover: test
 .PHONY: build
 build: mk_out
 	@echo -e "$(GREEN)=== 编译当前平台二进制 ===$(END)"
-	mkdir -p $(OUT_DIR)
 	CGO_ENABLED=$(CGO_ENABLED) $(GO_BUILD) $(BUILD_FLAGS) -o $(OUT_DIR)/$(APP_NAME) $(MAIN_FILE)
 	@echo -e "$(GREEN)输出: $(OUT_DIR)/$(APP_NAME)$(END)"
 
 .PHONY: cross
 cross: mk_out
 	@echo -e "$(GREEN)=== 全平台交叉编译 ===$(END)"
-	mkdir -p $(OUT_DIR)
 	$(foreach platform,$(PLATFORMS),\
 		GOOS=$(word 1,$(subst /, ,$(platform))) \
 		GOARCH=$(word 2,$(subst /, ,$(platform))) \

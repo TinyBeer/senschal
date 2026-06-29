@@ -2,12 +2,9 @@ package config
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"seneschal/internal/command/file"
 
-	"github.com/go-viper/mapstructure/v2"
 	"github.com/spf13/viper"
 )
 
@@ -93,41 +90,5 @@ func WriteSSHConfig(cfg *SSHConfig) error {
 	if cfg == nil || cfg.SSH == nil {
 		return fmt.Errorf("ssh config is nil")
 	}
-
-	var m map[string]interface{}
-	if err := mapstructure.Decode(cfg, &m); err != nil {
-		return fmt.Errorf("decode ssh config: %w", err)
-	}
-
-	v := viper.New()
-	v.SetConfigName(cfg.Alias)
-	v.SetConfigType(file.Ext_TOML)
-	v.AddConfigPath(SSHConfigDir)
-
-	for k, val := range m {
-		if sub, ok := val.(map[string]interface{}); ok {
-			for sk, sv := range sub {
-				if s, ok := sv.(string); ok && s == "" {
-					continue
-				}
-				if sv != nil {
-					v.Set(k+"."+sk, sv)
-				}
-			}
-		} else {
-			if val != nil {
-				v.Set(k, val)
-			}
-		}
-	}
-
-	if err := os.MkdirAll(SSHConfigDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create ssh config dir: %w", err)
-	}
-
-	cfgPath := filepath.Join(SSHConfigDir, cfg.Alias+".toml")
-	if err := v.WriteConfigAs(cfgPath); err != nil {
-		return fmt.Errorf("failed to write ssh config: %w", err)
-	}
-	return nil
+	return writeConfigToToml(cfg, SSHConfigDir, cfg.Alias, "ssh")
 }
