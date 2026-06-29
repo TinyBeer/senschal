@@ -7,20 +7,21 @@ import (
 )
 
 const (
-	Def_Generate_Dir      = "build"
-	Conf_Dir_Name         = "conf"
-	Env_Conf_Dir_Name     = "env"
-	Docker_Image_Dir_Name = "docker_image"
-	Docker_Deb_Dir_Name   = "docker_deb"
-	SSH_Conf_Dir_Name     = "ssh"
-	SSH_Key_Dir_Name      = "ssh_key"
-	Workout_Dir_Name      = "workout"
-	Project_Dir_Name      = "project"
-	Todo_Dir_Name         = "todo"
-	Tpl_Dir_Name          = "tpl"
-	Tpl_Gen_Dir_Name      = "_gen"
-	Tpl_Template_Dir_Name = "template"
-	Tpl_Setting_Name      = "setting"
+	Def_Generate_Dir        = "build"
+	Conf_Dir_Name           = "conf"
+	Env_Conf_Dir_Name       = "env"
+	Docker_Image_Dir_Name   = "docker_image"
+	Docker_Deb_Dir_Name     = "docker_deb"
+	SSH_Conf_Dir_Name       = "ssh"
+	SSH_Key_Dir_Name        = "ssh_key"
+	Workout_Dir_Name        = "workout"
+	Project_Dir_Name        = "project"
+	Todo_Dir_Name           = "todo"
+	Tpl_Dir_Name            = "tpl"
+	Tpl_Gen_Dir_Name        = "_gen"
+	Tpl_Template_Dir_Name   = "template"
+	Tpl_Setting_Name        = "setting"
+	Jenkins_Config_Dir_Name = "jenkins"
 )
 
 var Def_Data_Dir = func() string {
@@ -43,4 +44,5 @@ var (
 	Project_Dir      = filepath.Join(CFG_DIR, Project_Dir_Name)
 	Todo_Dir         = filepath.Join(Def_Data_Dir, Todo_Dir_Name)
 	Tpl_Dir          = filepath.Join(Def_Data_Dir, Tpl_Dir_Name)
+	Jenkins_CFG_DIR  = filepath.Join(CFG_DIR, Jenkins_Config_Dir_Name)
 )

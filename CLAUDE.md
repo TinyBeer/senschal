@@ -128,6 +128,8 @@ go mod tidy
 | `seneschal host down <alias> <remote> <local>`  | 从主机下载文件/目录到本地                                                                  |
 | `seneschal host check <aliases> <env>`          | 检查远程主机的环境状态                                                                     |
 | `seneschal host deploy <aliases> <env>`         | 部署环境（Docker）到远程主机                                                               |
+| `seneschal jenkins list [alias]`                | 列出 Jenkins 配置或指定实例的 Job 列表                                                     |
+| `seneschal jenkins add <alias> <token|password>` | 添加 Jenkins 配置（`--host` `-u` 可选）                                                   |
 | `seneschal todo [add/done/del]`                 | Todo 列表管理器，JSON 文件持久化                                                           |
 | `seneschal workout [-l] [name]`                 | 使用 Bubble Tea TUI 的运动计时器，CSV 配置运动计划                                         |
 
@@ -138,6 +140,7 @@ seneschal/
 ├── main.go                # 入口，调用 cmd.Execut()
 ├── cmd/                   # Cobra 命令定义
 │   ├── root.go            # 根命令
+│   ├── jenkins.go         # Jenkins 配置管理与 Job 列表
 │   ├── joy.go             # Joynova 项目与模板工具
 │   ├── img.go             # 图片处理（ASCII 艺术字、边缘检测）
 │   ├── env.go             # 环境列表
@@ -151,6 +154,7 @@ seneschal/
 │   ├── env.go             # 环境配置、Docker 配置（版本、镜像、用户组）
 │   ├── project.go         # 项目配置（proto 目录、服务目录、lobby 注册）
 │   ├── ssh.go             # SSH 配置（密码/密钥认证、主机、端口）
+│   ├── jenkins.go         # Jenkins 配置（别名、主机、密码）
 │   ├── workout.go         # 从 CSV 读取的运动配置（时长/计数/休息项）
 │   └── workouttype_string.go  # 自动生成的 stringer
 ├── internal/
@@ -224,6 +228,6 @@ TOML 配置文件存放在 `data/conf/<type>/` 中。
 
 ## 数据约定
 
-- **配置格式**：SSH/project/env 配置使用 TOML；运动计划使用 CSV；Todo 持久化使用 JSON
-- **配置目录**：`data/conf/<type>/`，其中 type 为 `env`、`project`、`ssh`、`workout`
+- **配置格式**：SSH/project/env/jenkins 配置使用 TOML；运动计划使用 CSV；Todo 持久化使用 JSON
+- **配置目录**：`data/conf/<type>/`，其中 type 为 `env`、`project`、`ssh`、`workout`、`jenkins`
 - **远程路径格式**：`ssh_alias:/path/to/file` — `fsutil.Parse()` 解析此格式

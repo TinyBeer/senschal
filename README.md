@@ -57,7 +57,7 @@ seneschal workout -l                        # 运动计时器
 
 ### 功能
 
-- [] Jenkins 常用api接入
+- [x] Jenkins 常用api接入（配置管理、Job列表）
 
 ### 优化
 
