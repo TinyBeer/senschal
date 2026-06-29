@@ -65,7 +65,7 @@ func readSSHConfigFromToml(dir, name string) (*SSHConfig, error) {
 }
 
 func GetSSHConfigMap() (map[string]*SSHConfig, error) {
-	return getSSHConfigMap(SSH_CFG_DIR)
+	return getSSHConfigMap(SSHConfigDir)
 }
 
 func getSSHConfigMap(dir string) (map[string]*SSHConfig, error) {
@@ -102,7 +102,7 @@ func WriteSSHConfig(cfg *SSHConfig) error {
 	v := viper.New()
 	v.SetConfigName(cfg.Alias)
 	v.SetConfigType(file.Ext_TOML)
-	v.AddConfigPath(SSH_CFG_DIR)
+	v.AddConfigPath(SSHConfigDir)
 
 	for k, val := range m {
 		if sub, ok := val.(map[string]interface{}); ok {
@@ -121,11 +121,11 @@ func WriteSSHConfig(cfg *SSHConfig) error {
 		}
 	}
 
-	if err := os.MkdirAll(SSH_CFG_DIR, 0o755); err != nil {
+	if err := os.MkdirAll(SSHConfigDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create ssh config dir: %w", err)
 	}
 
-	cfgPath := filepath.Join(SSH_CFG_DIR, cfg.Alias+".toml")
+	cfgPath := filepath.Join(SSHConfigDir, cfg.Alias+".toml")
 	if err := v.WriteConfigAs(cfgPath); err != nil {
 		return fmt.Errorf("failed to write ssh config: %w", err)
 	}

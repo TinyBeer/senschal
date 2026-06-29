@@ -74,13 +74,13 @@ var hostAddCmd = &cobra.Command{
 			method = config.SSHAuthMethod_KEY
 
 			// 确保 SSH_KEY_DIR 存在
-			if err := os.MkdirAll(config.SSH_KEY_DIR, 0o700); err != nil {
-				return fmt.Errorf("failed to create ssh key dir %s: %w", config.SSH_KEY_DIR, err)
+			if err := os.MkdirAll(config.SSHKeyDir, 0o700); err != nil {
+				return fmt.Errorf("failed to create ssh key dir %s: %w", config.SSHKeyDir, err)
 			}
 
 			// 拷贝密钥文件到 SSH_KEY_DIR
 			keyFileName := filepath.Base(privateKey)
-			dstKeyPath := filepath.Join(config.SSH_KEY_DIR, keyFileName)
+			dstKeyPath := filepath.Join(config.SSHKeyDir, keyFileName)
 
 			srcFile, err := os.Open(privateKey)
 			if err != nil {

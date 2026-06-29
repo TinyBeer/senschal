@@ -205,7 +205,7 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 				log.Println("install docker with internet ok...")
 			} else {
 				// 1.2 try to install docker with deb
-				err = transfer.Upload(config.DOCKER_DEB_DIR, c.Alias+":ops")
+				err = transfer.Upload(config.DockerDebDir, c.Alias+":ops")
 				if err != nil {
 					return err
 				}
@@ -257,7 +257,7 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 					return err
 				}
 			}
-			err = transfer.Upload(filepath.Join(config.DOCKER_IMAGE_DIR, "load.sh"), c.Alias+":ops/docker_image/load.sh")
+			err = transfer.Upload(filepath.Join(config.DockerImageDir, "load.sh"), c.Alias+":ops/docker_image/load.sh")
 			if err != nil {
 				return err
 			}

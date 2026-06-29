@@ -41,7 +41,7 @@ func (e *SSHExecutor) getClient() (*ssh.Client, error) {
 		cC.Auth = append(cC.Auth, ssh.Password(password))
 	case config.SSHAuthMethod_KEY:
 		// 读取私钥文件
-		privateKey, err := os.ReadFile(filepath.Join(config.SSH_KEY_DIR, e.cfg.SSH.PrivateKey))
+		privateKey, err := os.ReadFile(filepath.Join(config.SSHKeyDir, e.cfg.SSH.PrivateKey))
 		if err != nil {
 			log.Fatalf("Failed to read private key: %v", err)
 		}

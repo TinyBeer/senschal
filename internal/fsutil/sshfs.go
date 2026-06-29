@@ -53,7 +53,7 @@ func newSSHClient(conf *config.SSHConfig) (*sshClient, error) {
 	case config.SSHAuthMethod_PW:
 		cc.Auth = append(cc.Auth, ssh.Password(sshConf.Password))
 	case config.SSHAuthMethod_KEY:
-		keyPath := filepath.Join(config.SSH_KEY_DIR, sshConf.PrivateKey)
+		keyPath := filepath.Join(config.SSHKeyDir, sshConf.PrivateKey)
 		keyBytes, err := os.ReadFile(keyPath)
 		if err != nil {
 			return nil, fmt.Errorf("read private key %s: %w", keyPath, err)

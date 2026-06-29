@@ -301,9 +301,9 @@ func TestNewSSHClient_KeyAuth(t *testing.T) {
 	require.NoError(t, err)
 
 	// 暂存原 SSH_KEY_DIR，恢复后清理
-	origKeyDir := config.SSH_KEY_DIR
-	config.SSH_KEY_DIR = keyDir
-	t.Cleanup(func() { config.SSH_KEY_DIR = origKeyDir })
+	origKeyDir := config.SSHKeyDir
+	config.SSHKeyDir = keyDir
+	t.Cleanup(func() { config.SSHKeyDir = origKeyDir })
 
 	cfg := &config.SSHConfig{
 		Alias: "test-server",

@@ -18,7 +18,7 @@ func (img Image) Name() string {
 }
 
 func (img Image) LocalFilePath() string {
-	return filepath.Join(DOCKER_IMAGE_DIR, img.Name())
+	return filepath.Join(DockerImageDir, img.Name())
 }
 
 func (img Image) LocalFileExist() bool {
@@ -40,7 +40,7 @@ type Docker struct {
 }
 
 // func GetEnvConfig() (*EnvConfig, error) {
-// 	return getEnvConfig(ENV_CFG_DIR)
+// 	return getEnvConfig(EnvConfigDir)
 // }
 // func getEnvConfig(dir string) (*EnvConfig, error) {
 // 	v := viper.New()
@@ -84,7 +84,7 @@ func readEnvConfigFromToml(dir, name string) (*EnvConfig, error) {
 }
 
 func GetEnvConfigMap() (map[string]*EnvConfig, error) {
-	return getEnvConfigMap(ENV_CFG_DIR)
+	return getEnvConfigMap(EnvConfigDir)
 }
 
 func getEnvConfigMap(dir string) (map[string]*EnvConfig, error) {

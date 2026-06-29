@@ -44,7 +44,7 @@ var joyCmd = &cobra.Command{
 	Short:   "joynova project tool",
 	Example: "seneschal joy [-l]",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		list, err := config.GetProjectConfigList(config.Project_Dir)
+		list, err := config.GetProjectConfigList(config.ProjectDir)
 		if err != nil {
 			return fmt.Errorf("failed to get project config: %w", err)
 		}
@@ -71,7 +71,7 @@ var joyInterCmd = &cobra.Command{
 		apiName := split[1]
 
 		log.Printf("register %v %v interface %v", projectName, serivce, apiName)
-		list, err := config.GetProjectConfigList(config.Project_Dir)
+		list, err := config.GetProjectConfigList(config.ProjectDir)
 		if err != nil {
 			return fmt.Errorf("failed to get project config: %w", err)
 		}
@@ -212,7 +212,7 @@ var joyTplCmd = &cobra.Command{
 	Short:   "list template",
 	Example: "seneschal joy tpl",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		infoList, err := joyTplListTemplateInfo(config.Tpl_Dir)
+		infoList, err := joyTplListTemplateInfo(config.TplDir)
 		if err != nil {
 			return fmt.Errorf("failed to list templates: %w", err)
 		}
@@ -234,7 +234,7 @@ func joyTplListTemplateInfo(dir string) ([]*JoyTplTemplateInfo, error) {
 	}
 	infoList := make([]*JoyTplTemplateInfo, 0, len(dirList))
 	for _, dir := range dirList {
-		info, err := joyTplGetTemplateInfo(filepath.Join(config.Tpl_Dir, dir))
+		info, err := joyTplGetTemplateInfo(filepath.Join(config.TplDir, dir))
 		if err != nil {
 			return nil, err
 		}
@@ -244,7 +244,7 @@ func joyTplListTemplateInfo(dir string) ([]*JoyTplTemplateInfo, error) {
 }
 
 func joyTplGetTemplateInfo(dir string) (*JoyTplTemplateInfo, error) {
-	settingPath := filepath.Join(dir, config.Tpl_Setting_Name+"."+file.Ext_TOML)
+	settingPath := filepath.Join(dir, config.TplSettingName+"."+file.Ext_TOML)
 	dirName := filepath.Base(dir)
 
 	info := &JoyTplTemplateInfo{
@@ -295,7 +295,7 @@ var joyTplExecCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		tplName := args[0]
-		infoList, err := joyTplListTemplateInfo(config.Tpl_Dir)
+		infoList, err := joyTplListTemplateInfo(config.TplDir)
 		if err != nil {
 			return fmt.Errorf("failed to list templates: %w", err)
 		}
@@ -315,13 +315,13 @@ var joyTplExecCmd = &cobra.Command{
 			if info.Alias == tplName {
 				tplPath := info.Path
 				if genDir == "" {
-					genDir = filepath.Join(config.Def_Generate_Dir, tplName)
+					genDir = filepath.Join(config.DefaultGenerateDir, tplName)
 					if dirName != "" {
-						genDir = filepath.Join(config.Def_Generate_Dir, dirName)
+						genDir = filepath.Join(config.DefaultGenerateDir, dirName)
 					}
 				}
 				if settingFilePath == "" {
-					settingFilePath = filepath.Join(tplPath, config.Tpl_Setting_Name+"."+file.Ext_TOML)
+					settingFilePath = filepath.Join(tplPath, config.TplSettingName+"."+file.Ext_TOML)
 				}
 				err = file.ExecuteTemplate(tplPath, genDir, settingFilePath)
 				if err != nil {

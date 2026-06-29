@@ -29,7 +29,7 @@ var newWorkoutCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		workoutName := args[0]
-		f, err := os.OpenFile(filepath.Join(config.Workout_Dir, workoutName+"."+file.Ext_CSV), os.O_CREATE|os.O_WRONLY, os.ModePerm)
+		f, err := os.OpenFile(filepath.Join(config.WorkoutDir, workoutName+"."+file.Ext_CSV), os.O_CREATE|os.O_WRONLY, os.ModePerm)
 		if err != nil {
 			return fmt.Errorf("failed to create workout file: %w", err)
 		}
@@ -52,7 +52,7 @@ var workoutCmd = &cobra.Command{
 `,
 	Example: "seneschal workout <workout_name> [-l]",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		wcm, err := config.GetWorkoutConfigMap(config.Workout_Dir)
+		wcm, err := config.GetWorkoutConfigMap(config.WorkoutDir)
 		if err != nil {
 			return fmt.Errorf("failed to get workout config: %w", err)
 		}

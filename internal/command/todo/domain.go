@@ -15,7 +15,7 @@ var (
 
 func GetRepo() TodoRepository {
 	once.Do(func() {
-		repo = NewTodoFileRepo(filepath.Join(config.Todo_Dir, "todo.json"))
+		repo = NewTodoFileRepo(filepath.Join(config.TodoDir, "todo.json"))
 	})
 	return repo
 }

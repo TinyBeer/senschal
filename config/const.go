@@ -7,24 +7,24 @@ import (
 )
 
 const (
-	Def_Generate_Dir        = "build"
-	Conf_Dir_Name           = "conf"
-	Env_Conf_Dir_Name       = "env"
-	Docker_Image_Dir_Name   = "docker_image"
-	Docker_Deb_Dir_Name     = "docker_deb"
-	SSH_Conf_Dir_Name       = "ssh"
-	SSH_Key_Dir_Name        = "ssh_key"
-	Workout_Dir_Name        = "workout"
-	Project_Dir_Name        = "project"
-	Todo_Dir_Name           = "todo"
-	Tpl_Dir_Name            = "tpl"
-	Tpl_Gen_Dir_Name        = "_gen"
-	Tpl_Template_Dir_Name   = "template"
-	Tpl_Setting_Name        = "setting"
-	Jenkins_Config_Dir_Name = "jenkins"
+	DefaultGenerateDir   = "build"
+	ConfigDirName        = "conf"
+	EnvConfigDirName     = "env"
+	DockerImageDirName   = "docker_image"
+	DockerDebDirName     = "docker_deb"
+	SSHConfigDirName     = "ssh"
+	SSHKeyDirName        = "ssh_key"
+	WorkoutDirName       = "workout"
+	ProjectDirName       = "project"
+	TodoDirName          = "todo"
+	TplDirName           = "tpl"
+	TplGenDirName        = "_gen"
+	TplTemplateDirName   = "template"
+	TplSettingName       = "setting"
+	JenkinsConfigDirName = "jenkins"
 )
 
-var Def_Data_Dir = func() string {
+var DefaultDataDir = func() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		panic(fmt.Sprintf("cannot get user home directory: %v", err))
@@ -33,16 +33,15 @@ var Def_Data_Dir = func() string {
 }()
 
 var (
-	CFG_DIR     = filepath.Join(Def_Data_Dir, Conf_Dir_Name)
-	ENV_CFG_DIR = filepath.Join(CFG_DIR, Env_Conf_Dir_Name)
-
-	DOCKER_DEB_DIR   = filepath.Join(Def_Data_Dir, Docker_Deb_Dir_Name)
-	DOCKER_IMAGE_DIR = filepath.Join(Def_Data_Dir, Docker_Image_Dir_Name)
-	SSH_CFG_DIR      = filepath.Join(CFG_DIR, SSH_Conf_Dir_Name)
-	SSH_KEY_DIR      = filepath.Join(SSH_CFG_DIR, SSH_Key_Dir_Name)
-	Workout_Dir      = filepath.Join(CFG_DIR, Workout_Dir_Name)
-	Project_Dir      = filepath.Join(CFG_DIR, Project_Dir_Name)
-	Todo_Dir         = filepath.Join(Def_Data_Dir, Todo_Dir_Name)
-	Tpl_Dir          = filepath.Join(Def_Data_Dir, Tpl_Dir_Name)
-	Jenkins_CFG_DIR  = filepath.Join(CFG_DIR, Jenkins_Config_Dir_Name)
+	ConfigDir      = filepath.Join(DefaultDataDir, ConfigDirName)
+	EnvConfigDir   = filepath.Join(ConfigDir, EnvConfigDirName)
+	DockerDebDir   = filepath.Join(DefaultDataDir, DockerDebDirName)
+	DockerImageDir = filepath.Join(DefaultDataDir, DockerImageDirName)
+	SSHConfigDir   = filepath.Join(ConfigDir, SSHConfigDirName)
+	SSHKeyDir      = filepath.Join(SSHConfigDir, SSHKeyDirName)
+	WorkoutDir     = filepath.Join(ConfigDir, WorkoutDirName)
+	ProjectDir     = filepath.Join(ConfigDir, ProjectDirName)
+	TodoDir        = filepath.Join(DefaultDataDir, TodoDirName)
+	TplDir         = filepath.Join(DefaultDataDir, TplDirName)
+	JenkinsConfigDir = filepath.Join(ConfigDir, JenkinsConfigDirName)
 )

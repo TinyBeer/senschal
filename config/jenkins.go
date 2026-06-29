@@ -18,7 +18,7 @@ type Jenkins struct {
 }
 
 func GetJenkinsConfigMap() (map[string]*Jenkins, error) {
-	return getJenkinsConfigMap(Jenkins_CFG_DIR)
+	return getJenkinsConfigMap(JenkinsConfigDir)
 }
 
 func getJenkinsConfigMap(dir string) (map[string]*Jenkins, error) {
@@ -78,7 +78,7 @@ func WriteJenkinsConfig(cfg *Jenkins) error {
 	v := viper.New()
 	v.SetConfigName(cfg.Alias)
 	v.SetConfigType(file.Ext_TOML)
-	v.AddConfigPath(Jenkins_CFG_DIR)
+	v.AddConfigPath(JenkinsConfigDir)
 
 	for k, val := range m {
 		if sub, ok := val.(map[string]any); ok {
@@ -97,11 +97,11 @@ func WriteJenkinsConfig(cfg *Jenkins) error {
 		}
 	}
 
-	if err := os.MkdirAll(Jenkins_CFG_DIR, 0o755); err != nil {
+	if err := os.MkdirAll(JenkinsConfigDir, 0o755); err != nil {
 		return fmt.Errorf("failed to create jenkins config dir: %w", err)
 	}
 
-	cfgPath := filepath.Join(Jenkins_CFG_DIR, cfg.Alias+".toml")
+	cfgPath := filepath.Join(JenkinsConfigDir, cfg.Alias+".toml")
 	if err := v.WriteConfigAs(cfgPath); err != nil {
 		return fmt.Errorf("failed to write jenkins config: %w", err)
 	}
