@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"seneschal/config"
+	"seneschal/internal/runner"
 	"seneschal/pkg/util"
 
 	"github.com/bndr/gojenkins"
@@ -27,27 +28,6 @@ func init() {
 	jenkinsCmd.AddCommand(jenkinsAddCmd)
 	jenkinsCmd.AddCommand(jenkinsCreateCmd)
 	rootCmd.AddCommand(jenkinsCmd)
-}
-
-// getJenkinsClient 根据 alias 获取 Jenkins 配置并建立连接
-func getJenkinsClient(alias string) (*gojenkins.Jenkins, context.Context, error) {
-	jcm, err := config.GetJenkinsConfigMap()
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get jenkins config map, err: %w", err)
-	}
-	jc, ok := jcm[alias]
-	if !ok {
-		return nil, nil, fmt.Errorf("missing jenkins config of %s", alias)
-	}
-
-	jenkins := gojenkins.CreateJenkins(nil, jc.Host, jc.UserName, jc.Password)
-	ctx := context.Background()
-	_, err = jenkins.Init(ctx)
-	if err != nil {
-		return nil, nil, fmt.Errorf("connect to jenkins failed, err: %w", err)
-	}
-	log.Printf("connected to jenkins successfully")
-	return jenkins, ctx, nil
 }
 
 // ensureJob 检查 job 是否存在，根据 overwrite 决定创建或更新
@@ -102,7 +82,7 @@ var jenkinsListCmd = &cobra.Command{
 	Example: "seneschal jenkins list alias",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		jenkins, ctx, err := getJenkinsClient(args[0])
+		jenkins, ctx, err := runner.NewJenkinsClient(args[0])
 		if err != nil {
 			return err
 		}
@@ -165,7 +145,7 @@ var jenkinsCreateCmd = &cobra.Command{
 	Example: "  seneschal jenkins create myjenkins --name myJob --file ./job.xml\n  seneschal jenkins create myjenkins --dir ./jobs",
 	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		jenkins, ctx, err := getJenkinsClient(args[0])
+		jenkins, ctx, err := runner.NewJenkinsClient(args[0])
 		if err != nil {
 			return err
 		}
