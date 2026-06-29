@@ -142,6 +142,7 @@ go mod tidy
 | `seneschal host deploy <aliases> <env>`         | 部署环境（Docker）到远程主机                                                               |
 | `seneschal jenkins list [alias]`                | 列出 Jenkins 配置或指定实例的 Job 列表                                                     |
 | `seneschal jenkins add <alias> <token|password>` | 添加 Jenkins 配置（`--host` `-u` 可选）                                                   |
+| `seneschal jenkins create <alias>`              | 从 XML 创建 Jenkins Job（`--file --name` 单任务，`--dir` 批量，`--overwrite` 覆盖）         |
 | `seneschal todo [add/done/del]`                 | Todo 列表管理器，JSON 文件持久化                                                           |
 | `seneschal workout [-l] [name]`                 | 使用 Bubble Tea TUI 的运动计时器，CSV 配置运动计划                                         |
 
