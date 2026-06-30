@@ -86,7 +86,7 @@ mk_out:
 .PHONY: test
 test: mk_out
 	@echo -e "$(GREEN)=== 执行单元测试 ===$(END)"
-	$(GO_TEST) -v -race -coverprofile=$(OUT_DIR)/coverage.out ./...
+	$(GO_TEST) -race -coverprofile=$(OUT_DIR)/coverage.out ./...
 
 .PHONY: cover
 cover: test
