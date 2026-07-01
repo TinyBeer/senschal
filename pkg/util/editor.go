@@ -11,6 +11,9 @@ import (
 // ErrEmptyPath 表示传入的文件路径为空
 var ErrEmptyPath = errors.New("file path is empty")
 
+// ErrEditorExitedNonZero 表示编辑器以非零状态码退出
+var ErrEditorExitedNonZero = errors.New("editor exited with non-zero code")
+
 // editorPriority 是 PATH 中查找编辑器的顺序（优先靠前）
 var editorPriority = []string{"vi", "nano", "vim", "emacs", "code --wait"}
 
@@ -40,17 +43,28 @@ func EditFile(path string, content []byte) ([]byte, error) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
+	var runErr error
 	if err := cmd.Run(); err != nil {
-		// 找不到可执行文件 → 明确错误
+		// os.IsNotExist 用于检查命令是否可执行。
+		// 这里不使用 errors.Is(err, fs.ErrNotExist) 是因为错误链
+		// 中包含的是 syscall.ENOENT 而非 fs.ErrNotExist，该写法不适用。
 		if errors.Is(err, exec.ErrNotFound) || os.IsNotExist(err) {
 			return nil, fmt.Errorf("editor %q not found", editor)
 		}
-		// 其他错误（如非零退出），继续读取文件
+		// 其他错误（如非零退出），记录错误但继续读取文件
+		runErr = err
 	}
 
 	out, err := os.ReadFile(path)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("file %q was not created by editor", path)
+		}
 		return nil, fmt.Errorf("read edited file: %w", err)
+	}
+
+	if runErr != nil {
+		return out, fmt.Errorf("%w: %s", ErrEditorExitedNonZero, runErr.Error())
 	}
 	return out, nil
 }

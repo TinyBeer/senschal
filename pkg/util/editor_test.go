@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSplitEditorArgs_NoArgs(t *testing.T) {
@@ -53,7 +54,7 @@ func TestEditFile_EmptyPath(t *testing.T) {
 func TestEditFile_EditorNotFound(t *testing.T) {
 	tmpDir := t.TempDir()
 	file := filepath.Join(tmpDir, "test.txt")
-	os.WriteFile(file, []byte("hello"), 0644)
+	require.NoError(t, os.WriteFile(file, []byte("hello"), 0644))
 
 	// 强制使用不存在的编辑器
 	t.Setenv("VISUAL", "/no/such/editor/binary")
@@ -64,14 +65,27 @@ func TestEditFile_EditorNotFound(t *testing.T) {
 	assert.Contains(t, err.Error(), "not found")
 }
 
+func TestEditFile_EditorExitsNonZero(t *testing.T) {
+	tmpDir := t.TempDir()
+	targetFile := filepath.Join(tmpDir, "target.txt")
+	mockEditor := filepath.Join(tmpDir, "mock_editor_fail.sh")
+	require.NoError(t, os.WriteFile(targetFile, []byte("original"), 0644))
+	require.NoError(t, os.WriteFile(mockEditor, []byte("#!/bin/sh\nprintf 'partial content' > \"$1\"\nexit 1\n"), 0755))
+
+	t.Setenv("VISUAL", mockEditor)
+	t.Setenv("EDITOR", "")
+
+	content, err := EditFile(targetFile, nil)
+	assert.ErrorIs(t, err, ErrEditorExitedNonZero)
+	assert.Equal(t, "partial content", string(content))
+}
+
 func TestEditFile_WithMockEditor(t *testing.T) {
 	tmpDir := t.TempDir()
 	targetFile := filepath.Join(tmpDir, "target.txt")
-	os.WriteFile(targetFile, []byte("original"), 0644)
-
-	// 创建模拟编辑器脚本 — 把固定内容写入目标文件
 	mockEditor := filepath.Join(tmpDir, "mock_editor.sh")
-	os.WriteFile(mockEditor, []byte("#!/bin/sh\nprintf 'edited content' > \"$1\"\n"), 0755)
+	require.NoError(t, os.WriteFile(targetFile, []byte("original"), 0644))
+	require.NoError(t, os.WriteFile(mockEditor, []byte("#!/bin/sh\nprintf 'edited content' > \"$1\"\n"), 0755))
 
 	t.Setenv("VISUAL", mockEditor)
 	t.Setenv("EDITOR", "")
@@ -86,7 +100,7 @@ func TestEditFile_WithInitialContent(t *testing.T) {
 	targetFile := filepath.Join(tmpDir, "target.txt")
 
 	mockEditor := filepath.Join(tmpDir, "mock_editor.sh")
-	os.WriteFile(mockEditor, []byte("#!/bin/sh\nprintf 'new content' > \"$1\"\n"), 0755)
+	require.NoError(t, os.WriteFile(mockEditor, []byte("#!/bin/sh\nprintf 'new content' > \"$1\"\n"), 0755))
 
 	t.Setenv("VISUAL", mockEditor)
 	t.Setenv("EDITOR", "")
@@ -96,6 +110,7 @@ func TestEditFile_WithInitialContent(t *testing.T) {
 	assert.Equal(t, "new content", string(content))
 
 	// 验证磁盘上的文件也被更新
-	readBack, _ := os.ReadFile(targetFile)
+	readBack, err := os.ReadFile(targetFile)
+	require.NoError(t, err)
 	assert.Equal(t, "new content", string(readBack))
 }
