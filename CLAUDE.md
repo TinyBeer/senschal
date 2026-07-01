@@ -201,6 +201,7 @@ seneschal/
 │           ├── domain.go   # TodoRepository 接口、单例获取
 │           └── repository.go # TodoFileRepo（JSON CRUD）
 ├── pkg/util/               # 工具函数
+│   ├── editor.go           # 本地编辑器编辑文件（EditFile，支持 $VISUAL/$EDITOR 环境变量）
 │   ├── table.go            # 支持 markdown 的 CLI 表格渲染
 │   └── file.go             # 文件保存工具
 └── ui/
@@ -235,7 +236,15 @@ TOML 配置文件存放在 `data/conf/<type>/` 中。
 
 `internal/runner/env_mgr/common.go` 中的 `IEnvMgr` 定义了 `Check()` 和 `Deploy()` 方法。目前仅实现了 `EnvMgrDocker`，它安装 Docker（通过网络或 .deb）、配置用户组并加载所需的 Docker 镜像。
 
-### 模板引擎
+### 本地编辑器编辑
+
+`pkg/util/editor.go` 中的 `EditFile(path, content)` 提供了一种通过用户本地编辑器交互式编辑文件的机制：
+
+- **编辑器发现**：`$VISUAL` > `$EDITOR` > PATH 查找（`vi` > `nano` > `vim` > `emacs` > `code --wait`）> `vi` 兜底
+- **两种编辑模式**：`content == nil` 时打开已有文件编辑；`content != nil` 时先写入再打开编辑器
+- **非零退出处理**：编辑器以非零码退出时仍尝试读回文件内容，同时返回 `ErrEditorExitedNonZero` 让调用方感知异常
+- **错误变量**：`ErrEmptyPath`（路径为空）、`ErrEditorExitedNonZero`（编辑器非零退出）
+- 参见 `pkg/util/editor.go`
 
 模板使用 Go 的 `text/template`，设置来自 `setting.toml` 文件。模板位于 `data/tpl/<name>/template/` 并生成到 `data/_gen/<name>/`。参见 `internal/command/file/tpl.go` 和 `cmd/joy.go` 中的 `joy tpl exec`。
 
