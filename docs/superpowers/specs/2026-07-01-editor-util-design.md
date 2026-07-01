@@ -44,8 +44,10 @@ func EditFile(path string, content []byte) ([]byte, error)
 3. args = splitEditorArgs(editor, path)
 4. cmd = exec.Command(args[0], args[1:]...)
 5. cmd.Stdin/Stdout/Stderr = os.Stdin/Stdout/Stderr
-6. cmd.Run()  // 阻塞等待退出
-7. os.ReadFile(path)  // 无论编辑器退出码，始终读回文件
+6. cmd.Run()
+7. 编辑器非零退出 → 记录 runErr，仍继续读文件
+8. os.ReadFile(path)  // 无论编辑器退出码，始终读回文件
+9. runErr != nil → 返回内容 + ErrEditorExitedNonZero（包裹原始错误）
 ```
 
 ### 错误处理
@@ -53,15 +55,16 @@ func EditFile(path string, content []byte) ([]byte, error)
 | 场景 | 行为 |
 |------|------|
 | path 为空 | 返回 `ErrEmptyPath` |
-| 编辑器找不到 | 返回明确错误，列出已查找的编辑器列表 |
+| 编辑器找不到 | 返回明确错误 |
 | content 写入失败 | 返回写入原始错误 |
-| 编辑器非零退出 | 仍尝试读回文件内容 |
-| 读回文件失败 | 返回读取错误 |
+| 编辑器非零退出 | 读回文件内容，同时返回 `ErrEditorExitedNonZero` 让调用方感知异常 |
+| 读回文件失败 | 文件不存在时返回友好的提示；其他读取错误原样返回 |
 
 ### 常量与错误变量
 
 ```go
 var ErrEmptyPath = errors.New("file path is empty")
+var ErrEditorExitedNonZero = errors.New("editor exited with non-zero code")
 
 // detectEditor 中使用的编辑器查找顺序
 var editorPriority = []string{"vi", "nano", "vim", "emacs", "code --wait"}
@@ -71,5 +74,6 @@ var editorPriority = []string{"vi", "nano", "vim", "emacs", "code --wait"}
 
 1. 编辑器发现测试：mock `os.Getenv` 和 `exec.LookPath` 的返回，验证优先级
 2. 参数拆分测试：空格拆分、无参编辑器、含参编辑器
-3. `EditFile` 集成测试：用 `echo` 或 `cat > file` 模拟编辑器，验证文件内容被正确读回
-4. 错误路径测试：空 path、编辑器不存在的友好错误
+3. `EditFile` 集成测试：用 mock shell 脚本模拟编辑器，验证文件内容被正确读回
+4. 错误路径测试：空 path、编辑器不存在、编辑器非零退出
+5. 所有 `os.WriteFile`/`os.ReadFile` 调用的错误使用 `require.NoError` 检查

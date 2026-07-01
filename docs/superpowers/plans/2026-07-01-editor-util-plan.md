@@ -29,7 +29,7 @@
   - `func detectEditor() string` — 返回编辑器命令（可能含参数）
   - `func splitEditorArgs(editor, filePath string) []string` — 返回 `[cmd, arg1, ..., filePath]`
 
-- [ ] **Step 1: 写 splitEditorArgs 的测试**
+- [x] **Step 1: 写 splitEditorArgs 的测试**
 
 写入 `pkg/util/editor_test.go`:
 
@@ -58,14 +58,14 @@ func TestSplitEditorArgs_EmptyEditor(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试，验证失败**
+- [x] **Step 2: 运行测试，验证失败**
 
 ```bash
 go test ./pkg/util/ -run TestSplitEditorArgs -v
 ```
 Expected: 编译失败，`splitEditorArgs` 未定义
 
-- [ ] **Step 3: 写最小实现**
+- [x] **Step 3: 写最小实现**
 
 写入 `pkg/util/editor.go`:
 
@@ -83,14 +83,14 @@ func splitEditorArgs(editor, filePath string) []string {
 }
 ```
 
-- [ ] **Step 4: 运行测试，验证通过**
+- [x] **Step 4: 运行测试，验证通过**
 
 ```bash
 go test ./pkg/util/ -run TestSplitEditorArgs -v
 ```
 Expected: ALL PASS
 
-- [ ] **Step 5: 写 detectEditor 的测试**
+- [x] **Step 5: 写 detectEditor 的测试**
 
 追加到 `pkg/util/editor_test.go`:
 
@@ -118,14 +118,14 @@ func TestDetectEditor_FallbackToVi(t *testing.T) {
 }
 ```
 
-- [ ] **Step 6: 运行测试，验证失败**
+- [x] **Step 6: 运行测试，验证失败**
 
 ```bash
 go test ./pkg/util/ -run TestDetectEditor -v
 ```
 Expected: 编译失败，`detectEditor` 未定义
 
-- [ ] **Step 7: 实现 detectEditor**
+- [x] **Step 7: 实现 detectEditor**
 
 追加到 `pkg/util/editor.go`:
 
@@ -157,14 +157,14 @@ func detectEditor() string {
 }
 ```
 
-- [ ] **Step 8: 运行测试，验证通过**
+- [x] **Step 8: 运行测试，验证通过**
 
 ```bash
 go test ./pkg/util/ -run "TestDetectEditor|TestSplitEditorArgs" -v
 ```
 Expected: ALL PASS
 
-- [ ] **Step 9: 提交**
+- [x] **Step 9: 提交**
 
 ```bash
 git add pkg/util/editor.go pkg/util/editor_test.go
@@ -184,7 +184,7 @@ git commit -m "feat(util): add detectEditor and splitEditorArgs helpers"
 - Produces: `func EditFile(path string, content []byte) ([]byte, error)`
 - Errors: `var ErrEmptyPath`
 
-- [ ] **Step 1: 写 EditFile 测试**
+- [x] **Step 1: 写 EditFile 测试**
 
 追加到 `pkg/util/editor_test.go`:
 
@@ -250,14 +250,14 @@ func TestEditFile_WithInitialContent(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: 运行测试，验证失败**
+- [x] **Step 2: 运行测试，验证失败**
 
 ```bash
 go test ./pkg/util/ -run TestEditFile -v
 ```
 Expected: 编译失败，`EditFile` 和 `ErrEmptyPath` 未定义
 
-- [ ] **Step 3: 写最小实现**
+- [x] **Step 3: 写最小实现**
 
 更新 `pkg/util/editor.go`，添加完整实现：
 
@@ -343,21 +343,21 @@ func splitEditorArgs(editor, filePath string) []string {
 }
 ```
 
-- [ ] **Step 4: 运行测试，验证通过**
+- [x] **Step 4: 运行测试，验证通过**
 
 ```bash
 go test ./pkg/util/ -v
 ```
 Expected: ALL PASS
 
-- [ ] **Step 5: 运行全量测试，确保不破坏已有功能**
+- [x] **Step 5: 运行全量测试，确保不破坏已有功能**
 
 ```bash
 go test ./...
 ```
 Expected: ALL PASS
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 ```bash
 git add pkg/util/editor.go pkg/util/editor_test.go
