@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func readAllFromFile(path string, typ string) (map[string]any, error) {
+func readAllFromFile(path, typ string) (map[string]any, error) {
 	v := viper.New()
 	v.SetConfigName(filepath.Base(path))
 	v.SetConfigType(typ)

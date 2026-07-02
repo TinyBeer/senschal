@@ -23,7 +23,7 @@ server:
 mysql:
   max_conn: 20
 `
-	err := os.WriteFile(fullPath, []byte(content), 0644)
+	err := os.WriteFile(fullPath, []byte(content), 0o644)
 	assert.NoError(t, err)
 
 	// 调用目标函数
@@ -57,7 +57,7 @@ func TestReadAllFromFile_WrongConfigType(t *testing.T) {
 
 	fullPath := filepath.Join(tmpDir, "test.yaml")
 	content := `name: test`
-	_ = os.WriteFile(fullPath, []byte(content), 0644)
+	_ = os.WriteFile(fullPath, []byte(content), 0o644)
 
 	// yaml 文件指定 type=json，必然解析报错
 	_, err := readAllFromFile(fullPath, "json")
@@ -70,7 +70,7 @@ func TestReadAllFromFile_JsonFile(t *testing.T) {
 
 	fullPath := filepath.Join(tmpDir, "conf.json")
 	content := `{"log":{"level":"info"}}`
-	_ = os.WriteFile(fullPath, []byte(content), 0644)
+	_ = os.WriteFile(fullPath, []byte(content), 0o644)
 
 	settings, err := readAllFromFile(fullPath, "json")
 	assert.NoError(t, err)

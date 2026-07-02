@@ -31,7 +31,7 @@ func EditFile(path string, content []byte) ([]byte, error) {
 
 	// 如果有初始内容，先写入文件
 	if content != nil {
-		if err := os.WriteFile(path, content, 0644); err != nil {
+		if err := os.WriteFile(path, content, 0o644); err != nil {
 			return nil, fmt.Errorf("write initial content: %w", err)
 		}
 	}

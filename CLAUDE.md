@@ -203,7 +203,8 @@ seneschal/
 ├── pkg/util/               # 工具函数
 │   ├── editor.go           # 本地编辑器编辑文件（EditFile，支持 $VISUAL/$EDITOR 环境变量）
 │   ├── table.go            # 支持 markdown 的 CLI 表格渲染
-│   └── file.go             # 文件保存工具
+│   ├── file.go             # 文件保存与 ListDir 系列函数（单层/递归，文件/目录，拓展名筛选）
+│   └── file_test.go        # ListDir 系列单元测试
 └── ui/
      ├── component/         # 终端 UI 组件库
      │   ├── container.go  # Box（水平/垂直布局）、InlineText、Rectangle 容器

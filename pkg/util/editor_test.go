@@ -54,7 +54,7 @@ func TestEditFile_EmptyPath(t *testing.T) {
 func TestEditFile_EditorNotFound(t *testing.T) {
 	tmpDir := t.TempDir()
 	file := filepath.Join(tmpDir, "test.txt")
-	require.NoError(t, os.WriteFile(file, []byte("hello"), 0644))
+	require.NoError(t, os.WriteFile(file, []byte("hello"), 0o644))
 
 	// 强制使用不存在的编辑器
 	t.Setenv("VISUAL", "/no/such/editor/binary")
@@ -69,8 +69,8 @@ func TestEditFile_EditorExitsNonZero(t *testing.T) {
 	tmpDir := t.TempDir()
 	targetFile := filepath.Join(tmpDir, "target.txt")
 	mockEditor := filepath.Join(tmpDir, "mock_editor_fail.sh")
-	require.NoError(t, os.WriteFile(targetFile, []byte("original"), 0644))
-	require.NoError(t, os.WriteFile(mockEditor, []byte("#!/bin/sh\nprintf 'partial content' > \"$1\"\nexit 1\n"), 0755))
+	require.NoError(t, os.WriteFile(targetFile, []byte("original"), 0o644))
+	require.NoError(t, os.WriteFile(mockEditor, []byte("#!/bin/sh\nprintf 'partial content' > \"$1\"\nexit 1\n"), 0o755))
 
 	t.Setenv("VISUAL", mockEditor)
 	t.Setenv("EDITOR", "")
@@ -84,8 +84,8 @@ func TestEditFile_WithMockEditor(t *testing.T) {
 	tmpDir := t.TempDir()
 	targetFile := filepath.Join(tmpDir, "target.txt")
 	mockEditor := filepath.Join(tmpDir, "mock_editor.sh")
-	require.NoError(t, os.WriteFile(targetFile, []byte("original"), 0644))
-	require.NoError(t, os.WriteFile(mockEditor, []byte("#!/bin/sh\nprintf 'edited content' > \"$1\"\n"), 0755))
+	require.NoError(t, os.WriteFile(targetFile, []byte("original"), 0o644))
+	require.NoError(t, os.WriteFile(mockEditor, []byte("#!/bin/sh\nprintf 'edited content' > \"$1\"\n"), 0o755))
 
 	t.Setenv("VISUAL", mockEditor)
 	t.Setenv("EDITOR", "")
@@ -100,7 +100,7 @@ func TestEditFile_WithInitialContent(t *testing.T) {
 	targetFile := filepath.Join(tmpDir, "target.txt")
 
 	mockEditor := filepath.Join(tmpDir, "mock_editor.sh")
-	require.NoError(t, os.WriteFile(mockEditor, []byte("#!/bin/sh\nprintf 'new content' > \"$1\"\n"), 0755))
+	require.NoError(t, os.WriteFile(mockEditor, []byte("#!/bin/sh\nprintf 'new content' > \"$1\"\n"), 0o755))
 
 	t.Setenv("VISUAL", mockEditor)
 	t.Setenv("EDITOR", "")
