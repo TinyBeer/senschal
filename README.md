@@ -115,6 +115,7 @@ seneschal joy tpl exec mytpl -d ./out -s custom.toml -n myapp
 
 ### 功能
 
+- [ ] bug: 渲染多文件夹下的同名模板时，所有生成结果使用了相同模板
 - [x] Jenkins 常用api接入（配置管理、Job列表）
 - [x] Jenkins Job创建
 
