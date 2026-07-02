@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	DefaultGenerateDir   = "build"
+	DefaultGenerateDir   = "out"
 	ConfigDirName        = "conf"
 	EnvConfigDirName     = "env"
 	DockerImageDirName   = "docker_image"

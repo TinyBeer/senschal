@@ -67,7 +67,7 @@ func ExecuteTemplate(tplPath, genDir, settingPath string) error {
 		return fmt.Errorf("failed to walk template dir: %w", err)
 	}
 
-	if len(tplFiles) == 0 && len(emptyDirs) == 0 {
+	if len(tplFiles) == 0 {
 		return fmt.Errorf("execute template[%s] failed: nothing found in [%s]", tplPath, tplSrcDir)
 	}
 
@@ -105,13 +105,6 @@ func ExecuteTemplate(tplPath, genDir, settingPath string) error {
 		_ = f.Close()
 		if err != nil {
 			return fmt.Errorf("failed to execute template [%s]: %w", relPath, err)
-		}
-	}
-
-	// 创建空目录
-	for _, dir := range emptyDirs {
-		if err := os.MkdirAll(filepath.Join(genDir, dir), 0o755); err != nil {
-			return err
 		}
 	}
 
