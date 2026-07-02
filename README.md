@@ -113,9 +113,56 @@ seneschal joy tpl exec mytpl -d ./out -s custom.toml -n myapp
 
 ## TODO
 
+### Bug 修复
+
+- [ ] 渲染多文件夹下的同名模板时，所有生成结果使用了相同模板
+  原因：使用ParseFiles/ParseGlob时，使用文件名作为模板唯一索引，如果出现同名模板时候会进行覆盖
+  解决方案：使用完整路径作为模板索引，参考：
+
+  ```golang
+  // LoadTemplates 递归加载目录，模板名使用完整相对路径，杜绝重名冲突
+  func LoadTemplates(root string) (*template.Template, error) {
+    tpl := template.New("root") // 根容器，无实际渲染用途
+
+    err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+      if err != nil {
+        return err
+      }
+      if info.IsDir() {
+        return nil
+      }
+      ext := filepath.Ext(path)
+      if ext != ".tmpl" && ext != ".html" {
+        return nil
+      }
+
+      // 关键：模板名 = 文件相对路径，全局唯一
+      content, err := os.ReadFile(path)
+      if err != nil {
+        return err
+      }
+      _, err = tpl.New(path).Parse(string(content))
+      return err
+    })
+    return tpl, err
+  }
+
+  func main() {
+    tpl, _ := LoadTemplates("./templates")
+    // 渲染 admin/list.tmpl，通过完整路径区分
+    tpl.ExecuteTemplate(os.Stdout, "templates/admin/list.tmpl", nil)
+    // 渲染 user/list.tmpl
+    tpl.ExecuteTemplate(os.Stdout, "templates/user/list.tmpl", nil)
+  }
+  ```
+  
+  执行计划：
+  - [ ] 使用 `pkg/util/file` 中的工具函数筛选文件
+  - [ ] 使用完整相对路径作为唯一索引，避免模板覆盖
+  - [ ] 忽略空文件夹，无效需求
+
 ### 功能
 
-- [ ] bug: 渲染多文件夹下的同名模板时，所有生成结果使用了相同模板
 - [x] Jenkins 常用api接入（配置管理、Job列表）
 - [x] Jenkins Job创建
 
