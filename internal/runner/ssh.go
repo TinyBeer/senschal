@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -139,7 +140,7 @@ func TransferFileWithResume(client *ssh.Client, localFilePath, remoteFilePath st
 
 	// 如果远程文件已存在且大小小于本地文件，则进行断点续传
 	if remoteFileSize > 0 && remoteFileSize < localFileInfo.Size() {
-		fmt.Printf("继续传输文件，已传输 %d 字节\n", remoteFileSize)
+		slog.Info("resuming transfer", "bytes", remoteFileSize)
 		if _, err := localFile.Seek(remoteFileSize, io.SeekStart); err != nil {
 			return fmt.Errorf("定位本地文件 %s 时出错: %s", localFilePath, err)
 		}
@@ -162,7 +163,7 @@ func TransferFileWithResume(client *ssh.Client, localFilePath, remoteFilePath st
 		}
 	} else if remoteFileSize == 0 {
 		// 远程文件不存在，从头开始传输
-		fmt.Println("开始全新传输文件")
+		slog.Info("starting fresh transfer")
 		stdin, err := session.StdinPipe()
 		if err != nil {
 			return fmt.Errorf("获取 SSH 会话标准输入管道时出错: %s", err)
@@ -180,7 +181,7 @@ func TransferFileWithResume(client *ssh.Client, localFilePath, remoteFilePath st
 			return fmt.Errorf("等待 SSH 会话完成复制命令时出错: %s", err)
 		}
 	} else {
-		fmt.Println("远程文件已完整，无需传输")
+		slog.Info("remote file already complete, skip transfer")
 	}
 
 	return nil

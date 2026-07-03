@@ -3,7 +3,7 @@ package runner
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"seneschal/config"
 
@@ -27,6 +27,6 @@ func NewJenkinsClient(alias string) (*gojenkins.Jenkins, context.Context, error)
 	if err != nil {
 		return nil, nil, fmt.Errorf("connect to jenkins failed, err: %w", err)
 	}
-	log.Printf("connected to jenkins successfully")
+	slog.Info("connected to jenkins successfully")
 	return jenkins, ctx, nil
 }

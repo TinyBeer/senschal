@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log/slog"
 	"path/filepath"
 
 	"seneschal/config"
@@ -80,7 +81,7 @@ Examples:
 
 		transfer := fsutil.NewTransfer(scm)
 
-		fmt.Printf("cp %s to %s\n", srcPath, dstPath)
+		slog.Info("cp", "src", srcPath, "dst", dstPath)
 
 		if srcStat.IsDir {
 			if err := transfer.CopyDir(srcRef, dstRef); err != nil {

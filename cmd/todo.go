@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"seneschal/internal/command/todo"
 	"seneschal/pkg/util"
@@ -52,7 +52,7 @@ var todoAddCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to add todo: %w", err)
 		}
-		log.Printf("add todo[%s] success, get id[%s]", content, id)
+		slog.Info("add todo success", "content", content, "id", id)
 		return nil
 	},
 }
@@ -70,7 +70,7 @@ var todoDoneCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to complete todo: %w", err)
 		}
-		log.Printf("complete todo[%s] success", id)
+		slog.Info("complete todo success", "id", id)
 		return nil
 	},
 }
@@ -88,7 +88,7 @@ var todoDelCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to delete todo: %w", err)
 		}
-		log.Printf("delete todo[%s] success", id)
+		slog.Info("delete todo success", "id", id)
 		return nil
 	},
 }

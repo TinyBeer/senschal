@@ -11,7 +11,9 @@ func SetLogLevel(l slog.Level) {
 	logLevel.Set(l)
 }
 
+// NewTraceLogger 默认使用 Info 级别日志
 func NewTraceLogger(writer io.Writer) *slog.Logger {
+	logLevel.Set(slog.LevelInfo)
 	return slog.New(NewTraceHandler(slog.NewJSONHandler(writer, &slog.HandlerOptions{
 		AddSource: false,
 		Level:     logLevel,

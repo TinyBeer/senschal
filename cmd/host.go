@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
@@ -99,7 +99,7 @@ var hostAddCmd = &cobra.Command{
 			}
 
 			privateKeyPath = dstKeyPath
-			log.Printf("private key copied to %s\n", dstKeyPath)
+			slog.Info("private key copied", "path", dstKeyPath)
 		} else {
 			method = config.SSHAuthMethod_PW
 		}
@@ -120,7 +120,7 @@ var hostAddCmd = &cobra.Command{
 			return err
 		}
 
-		log.Printf("SSH config for %s saved\n", alias)
+		slog.Info("SSH config saved", "alias", alias)
 		return nil
 	},
 }
@@ -200,7 +200,7 @@ Directory behavior:
 				continue
 			}
 			if _, ok := scm[alias]; !ok {
-				log.Printf("跳过 %s：未找到配置信息\n", alias)
+				slog.Warn("host config not found, skip", "alias", alias)
 				continue
 			}
 
@@ -208,7 +208,7 @@ Directory behavior:
 				// dir/* 模式：逐条拷贝到远端，不保留外层目录名
 				entries, err := localFs.ListDir(localRef)
 				if err != nil {
-					log.Printf("读取目录 %s 失败: %v", localPath, err)
+					slog.Warn("failed to list dir", "path", localPath, "err", err)
 					continue
 				}
 				for _, entry := range entries {
@@ -218,11 +218,11 @@ Directory behavior:
 					dstRef, _ := fsutil.Parse(dstEntry)
 					if entry.Stat.IsDir {
 						if err := transfer.CopyDir(srcRef, dstRef); err != nil {
-							log.Printf("上传子目录 %s 到 %s 失败: %v", entry.Name, alias, err)
+							slog.Warn("upload subdir failed", "name", entry.Name, "alias", alias, "err", err)
 						}
 					} else {
 						if err := transfer.CopyFile(srcRef, dstRef); err != nil {
-							log.Printf("上传文件 %s 到 %s 失败: %v", entry.Name, alias, err)
+							slog.Warn("upload file failed", "name", entry.Name, "alias", alias, "err", err)
 						}
 					}
 				}
@@ -232,18 +232,18 @@ Directory behavior:
 				dstPath := alias + ":" + path.Join(rawRemotePath, dirName)
 				dstRef, _ := fsutil.Parse(dstPath)
 				if err := transfer.CopyDir(localRef, dstRef); err != nil {
-					log.Printf("上传目录到 %s 失败: %v", alias, err)
+					slog.Warn("upload dir failed", "alias", alias, "err", err)
 					continue
 				}
 			} else {
 				// 单文件上传
 				fullRemotePath := alias + ":" + rawRemotePath
 				if err := transfer.Upload(localPath, fullRemotePath); err != nil {
-					log.Printf("上传文件到 %s 失败: %v", alias, err)
+					slog.Warn("upload file to alias failed", "alias", alias, "err", err)
 					continue
 				}
 			}
-			log.Printf("上传 %s → %s:%s 成功\n", rawLocalPath, alias, rawRemotePath)
+			slog.Info("upload success", "src", rawLocalPath, "alias", alias, "remote", rawRemotePath)
 		}
 		return nil
 	},
@@ -313,11 +313,11 @@ Directory behavior:
 				dstRef2, _ := fsutil.Parse(dstEntry)
 				if entry.Stat.IsDir {
 					if err := transfer.CopyDir(srcRef2, dstRef2); err != nil {
-						log.Printf("下载子目录 %s 失败: %v", entry.Name, err)
+						slog.Warn("download subdir failed", "name", entry.Name, "err", err)
 					}
 				} else {
 					if err := transfer.CopyFile(srcRef2, dstRef2); err != nil {
-						log.Printf("下载文件 %s 失败: %v", entry.Name, err)
+						slog.Warn("download file failed", "name", entry.Name, "err", err)
 					}
 				}
 			}
@@ -333,7 +333,7 @@ Directory behavior:
 				return fmt.Errorf("下载文件失败: %w", err)
 			}
 		}
-		log.Printf("下载 %s:%s → %s 成功\n", alias, rawRemotePath, localPath)
+		slog.Info("download success", "alias", alias, "remote", rawRemotePath, "local", localPath)
 		return nil
 	},
 }
@@ -398,10 +398,10 @@ var hostDeployCmd = &cobra.Command{
 		for _, alias := range sshAliasList {
 			c := scm[alias]
 			for _, mgr := range envMgrList {
-				log.Printf("environment manager[%v] deploying ...\n", mgr.GetName())
+				slog.Info("environment manager deploying", "name", mgr.GetName())
 				err := mgr.Deploy(c)
 				if err != nil {
-					log.Printf("deploy environment with config[%v] failed, err:%v\n", c, err)
+					slog.Warn("deploy environment failed", "config", c, "err", err)
 				}
 			}
 		}
@@ -434,7 +434,7 @@ func prepareHostEnv(args []string) (scm map[string]*config.SSHConfig, aliases []
 
 	for _, alias := range aliases {
 		if _, ok := scm[alias]; !ok {
-			log.Printf("未找到%s的配置信息\n", alias)
+			slog.Warn("host config not found", "alias", alias)
 			err = fmt.Errorf("存在未找到的机器配置")
 		}
 	}

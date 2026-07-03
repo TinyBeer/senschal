@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -70,7 +70,7 @@ var joyInterCmd = &cobra.Command{
 		serivce := split[0]
 		apiName := split[1]
 
-		log.Printf("register %v %v interface %v", projectName, serivce, apiName)
+		slog.Info("register interface", "project", projectName, "service", serivce, "api", apiName)
 		list, err := config.GetProjectConfigList(config.ProjectDir)
 		if err != nil {
 			return fmt.Errorf("failed to get project config: %w", err)
@@ -124,7 +124,11 @@ var joyInterCmd = &cobra.Command{
 		reqs := []string{apiReq}
 		rets := []string{apiRes}
 
-		log.Printf("lobby proto file: %s\nservice proto file: %s\nlobby register file: %s\n", targetLobbyProtoFile, targetServiceProtoFile, pc.GetLobbyRegisterFile())
+		slog.Debug("proto file info",
+		"lobby", targetLobbyProtoFile,
+		"service", targetServiceProtoFile,
+		"register", pc.GetLobbyRegisterFile(),
+	)
 
 		if registerLobby {
 			contain, err := file.FileContain(targetLobbyProtoFile, file.ReplaceProbe_Message.String())
@@ -256,7 +260,7 @@ func joyTplGetTemplateInfo(dir string) (*JoyTplTemplateInfo, error) {
 	_, err := os.Stat(settingPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			log.Print(settingPath)
+			slog.Info("setting file not found", "path", settingPath)
 			return info, nil
 		}
 		return nil, err

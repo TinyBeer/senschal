@@ -3,6 +3,7 @@ package runner
 import (
 	"bytes"
 	"fmt"
+	"log/slog"
 
 	"seneschal/config"
 )
@@ -23,7 +24,7 @@ func DockerLoadImageList(imageList []config.Image) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println(string(bs))
+		slog.Info("output", "output", string(bs))
 	}
 	return nil
 }
@@ -48,7 +49,7 @@ func DockerPullImageList(imageList []config.Image) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println(string(bs))
+		slog.Info("output", "output", string(bs))
 	}
 	return nil
 }
