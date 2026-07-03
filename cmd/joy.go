@@ -32,6 +32,7 @@ func init() {
 	joyTplExecCmd.Flags().StringP(FlagSettingFile, FlagSettingFile_S, "", "set file where setting read from")
 	joyTplExecCmd.Flags().StringP(FlagDirName, FlagDirName_S, "", "set dir name where files generate to")
 	joyTplCmd.AddCommand(joyTplExecCmd)
+	joyTplCmd.AddCommand(joyTplEditCmd)
 	joyCmd.AddCommand(joyTplCmd)
 	joyInterCmd.Flags().Bool("lobby", false, "register lobby interface at same time")
 	joyCmd.AddCommand(joyInterCmd)
@@ -331,6 +332,38 @@ var joyTplExecCmd = &cobra.Command{
 				if err != nil {
 					return fmt.Errorf("failed to execute template: %w", err)
 				}
+				return nil
+			}
+		}
+		return fmt.Errorf("template[%s] not found", tplName)
+	},
+}
+
+var joyTplEditCmd = &cobra.Command{
+	Use:     "edit <tpl_name>",
+	Short:   "edit template setting file",
+	Args:    cobra.ExactArgs(1),
+	Example: "seneschal joy tpl edit my-template",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		tplName := args[0]
+		infoList, err := joyTplListTemplateInfo(config.TplDir)
+		if err != nil {
+			return fmt.Errorf("failed to list templates: %w", err)
+		}
+		for _, info := range infoList {
+			if info.Alias == tplName {
+				settingPath := filepath.Join(info.Path, config.TplSettingName+"."+file.Ext_TOML)
+				if _, err := os.Stat(settingPath); err != nil {
+					if os.IsNotExist(err) {
+						return fmt.Errorf("setting file not found for template[%s]", tplName)
+					}
+					return fmt.Errorf("failed to stat setting file: %w", err)
+				}
+				_, err := util.EditFile(settingPath, nil)
+				if err != nil {
+					return fmt.Errorf("edit file error: %w", err)
+				}
+				slog.Info("template setting edited", "template", tplName, "path", settingPath)
 				return nil
 			}
 		}
