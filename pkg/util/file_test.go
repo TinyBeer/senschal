@@ -158,7 +158,8 @@ func TestListDilrRecursiveFile_AllFiles(t *testing.T) {
 	files, err := ListDilrRecursiveFile(tmpDir)
 	require.NoError(t, err)
 
-	assert.ElementsMatch(t,
+	assert.ElementsMatch(
+		t,
 		[]string{
 			"file1.txt",
 			"file2.go",
@@ -177,7 +178,8 @@ func TestListDilrRecursiveFile_FilterByExt(t *testing.T) {
 	files, err := ListDilrRecursiveFile(tmpDir, ".go")
 	require.NoError(t, err)
 
-	assert.ElementsMatch(t,
+	assert.ElementsMatch(
+		t,
 		[]string{
 			"file2.go",
 			filepath.Join("subdir", "subfile2.go"),
@@ -192,7 +194,8 @@ func TestListDilrRecursiveFile_MultipleExts(t *testing.T) {
 	files, err := ListDilrRecursiveFile(tmpDir, ".txt", ".go")
 	require.NoError(t, err)
 
-	assert.ElementsMatch(t,
+	assert.ElementsMatch(
+		t,
 		[]string{
 			"file1.txt",
 			"file2.go",
@@ -210,7 +213,8 @@ func TestListDilrRecursiveFile_ExtWithoutLeadingDot(t *testing.T) {
 	files, err := ListDilrRecursiveFile(tmpDir, "txt")
 	require.NoError(t, err)
 
-	assert.ElementsMatch(t,
+	assert.ElementsMatch(
+		t,
 		[]string{
 			"file1.txt",
 			filepath.Join("subdir", "subfile1.txt"),
@@ -260,7 +264,8 @@ func TestListDirRecursiveDir_AllDirs(t *testing.T) {
 	dirs, err := ListDirRecursiveDir(tmpDir)
 	require.NoError(t, err)
 
-	assert.ElementsMatch(t,
+	assert.ElementsMatch(
+		t,
 		[]string{
 			"subdir",
 			"subdir2",

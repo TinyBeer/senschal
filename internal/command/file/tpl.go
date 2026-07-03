@@ -65,7 +65,6 @@ func ExecuteTemplate(tplPath, genDir, settingPath string) error {
 		_, err = tpl.New(path).Parse(string(content))
 		return err
 	})
-
 	if err != nil {
 		return fmt.Errorf("failed to walk template dir: %w", err)
 	}
