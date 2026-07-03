@@ -163,8 +163,8 @@ seneschal joy tpl exec mytpl -d ./out -s custom.toml -n myapp
 
 ### 功能
 
-- [ ] 使用 slog 替换原日志
-  - [ ] 添加 trace_id
+- [x] 使用 slog 替换原日志
+  - [x] 添加 trace_id
 - [x] Jenkins 常用api接入（配置管理、Job列表）
 - [x] Jenkins Job创建
 

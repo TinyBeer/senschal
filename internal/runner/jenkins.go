@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"seneschal/config"
+	"seneschal/internal/ilog"
 
 	"github.com/bndr/gojenkins"
 )
@@ -22,7 +23,7 @@ func NewJenkinsClient(alias string) (*gojenkins.Jenkins, context.Context, error)
 	}
 
 	jenkins := gojenkins.CreateJenkins(nil, jc.Host, jc.UserName, jc.Password)
-	ctx := context.Background()
+	ctx := ilog.NewTraceCtx(context.Background())
 	_, err = jenkins.Init(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("connect to jenkins failed, err: %w", err)

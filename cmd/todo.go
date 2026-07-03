@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"seneschal/internal/command/todo"
+	"seneschal/internal/ilog"
 	"seneschal/pkg/util"
 
 	"github.com/spf13/cobra"
@@ -24,7 +25,7 @@ var todoCmd = &cobra.Command{
 	Example: "seneschal todo [add|done|del] [args]",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		repo := todo.GetRepo()
-		ctx := context.Background()
+		ctx := ilog.NewTraceCtx(context.Background())
 		list, err := repo.List(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to list todos: %w", err)
@@ -47,7 +48,7 @@ var todoAddCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		content := args[0]
 		repo := todo.GetRepo()
-		ctx := context.Background()
+		ctx := ilog.NewTraceCtx(context.Background())
 		id, err := repo.AddTodo(ctx, todo.NewTodo(content))
 		if err != nil {
 			return fmt.Errorf("failed to add todo: %w", err)
@@ -65,7 +66,7 @@ var todoDoneCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		repo := todo.GetRepo()
-		ctx := context.Background()
+		ctx := ilog.NewTraceCtx(context.Background())
 		err := repo.CompleteByID(ctx, id)
 		if err != nil {
 			return fmt.Errorf("failed to complete todo: %w", err)
@@ -83,7 +84,7 @@ var todoDelCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		repo := todo.GetRepo()
-		ctx := context.Background()
+		ctx := ilog.NewTraceCtx(context.Background())
 		err := repo.DeleteTodoByID(ctx, id)
 		if err != nil {
 			return fmt.Errorf("failed to delete todo: %w", err)
