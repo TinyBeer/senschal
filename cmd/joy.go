@@ -260,7 +260,7 @@ func joyTplGetTemplateInfo(dir string) (*JoyTplTemplateInfo, error) {
 	_, err := os.Stat(settingPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			slog.Info("setting file not found", "path", settingPath)
+			slog.Warn("setting file not found", "path", settingPath)
 			return info, nil
 		}
 		return nil, err

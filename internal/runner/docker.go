@@ -24,7 +24,7 @@ func DockerLoadImageList(imageList []config.Image) error {
 		if err != nil {
 			return err
 		}
-		slog.Info("output", "output", string(bs))
+		slog.Debug("output", "output", string(bs))
 	}
 	return nil
 }
@@ -49,7 +49,7 @@ func DockerPullImageList(imageList []config.Image) error {
 		if err != nil {
 			return err
 		}
-		slog.Info("output", "output", string(bs))
+		slog.Debug("output", "output", string(bs))
 	}
 	return nil
 }

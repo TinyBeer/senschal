@@ -182,7 +182,7 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 	}
 	transfer := fsutil.NewTransfer(scm)
 
-	slog.Info("check docker ...")
+	slog.Debug("check docker ...")
 	// 1. check docker installment
 	res, err := e.Check(c)
 	if err != nil {
@@ -195,14 +195,14 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 		// 2. deploy docker invironment
 		if !diagnosis.IsInstalled {
 			// 1.1 try to install docker with net
-			slog.Info("install docker with internet ...")
+			slog.Debug("install docker with internet ...")
 			output, err := se.ExecuteCommand("curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun")
 			if err != nil {
 				return fmt.Errorf("failed to install docker with internet, err: %v", err)
 			}
 			result := string(bytes.Trim(output, " \n"))
 			if strings.Contains(result, "Server: Docker Engine - Community") {
-				slog.Info("install docker with internet ok...")
+				slog.Debug("install docker with internet ok...")
 			} else {
 				// 1.2 try to install docker with deb
 				err = transfer.Upload(config.DockerDebDir, c.Alias+":ops")
@@ -214,7 +214,7 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 				if err != nil {
 					return err
 				}
-				slog.Info("install script output", "output", string(output))
+				slog.Debug("install script output", "output", string(output))
 			}
 		}
 		if !diagnosis.HaveDockerGroup {
@@ -246,7 +246,7 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 		}
 		if len(diagnosis.MissingImageList) != 0 {
 			//  1.3 load images
-			slog.Info("docker images loading ...")
+			slog.Debug("docker images loading ...")
 			err := runner.DockerLoadImageList(diagnosis.MissingImageList)
 			if err != nil {
 				return err
@@ -265,7 +265,7 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 			if err != nil {
 				return err
 			}
-			slog.Info("load output", "output", string(output))
+			slog.Debug("load output", "output", string(output))
 
 		}
 	}
