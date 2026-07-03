@@ -47,6 +47,7 @@ Seneschal 是一个 Go CLI 工具，用于在云服务器/Linux 服务器上自�
 ### 具体执行
 
 开发流程遵循 TDD，使用 `github.com/stretchr/testify` 测试框架：
+
 1. 红：先写单元测试（预期失败）
 2. 绿：写刚好通过测试的最少业务代码
 3. 重构：测试全绿后重构，重构不改动测试
@@ -66,6 +67,13 @@ Seneschal 是一个 Go CLI 工具，用于在云服务器/Linux 服务器上自�
 - "重构 X" -> "重构前后都确认测试通过"
 
 ## 编码规范
+
+### 接口抽象
+
+1. 每个接口方法定义不超过5个
+2. 接口命名应包含实体名，如 UserDao,UserRepo
+3. 大接口使用小接口聚合
+4. 接口实现时命名应体现不同实现区别，如 UserMySQLRepo, TodoFileRepo
 
 ### Cobra
 

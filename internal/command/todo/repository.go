@@ -25,7 +25,7 @@ type TodoStore struct {
 	List  []*Todo `json:"list,omitempty"`
 }
 
-// AddTodo implements TodoRepository.
+// AddTodo implements TodoBasicRepo.
 func (r *TodoFileRepo) AddTodo(ctx context.Context, todo *Todo) (string, error) {
 	curUnix := time.Now().Unix()
 	store, err := r.getStore()
@@ -44,7 +44,7 @@ func (r *TodoFileRepo) AddTodo(ctx context.Context, todo *Todo) (string, error) 
 	return id, err
 }
 
-// CompleteByID implements TodoRepository.
+// CompleteByID implements TodoBasicRepo.
 func (r *TodoFileRepo) CompleteByID(ctx context.Context, id string) error {
 	curUnix := time.Now().Unix()
 	store, err := r.getStore()
@@ -69,7 +69,7 @@ func (r *TodoFileRepo) CompleteByID(ctx context.Context, id string) error {
 	return os.WriteFile(r.File, bs, 0o644)
 }
 
-// DeleteTodoByID implements TodoRepository.
+// DeleteTodoByID implements TodoBasicRepo.
 func (r *TodoFileRepo) DeleteTodoByID(ctx context.Context, id string) error {
 	curUnix := time.Now().Unix()
 	store, err := r.getStore()
@@ -92,7 +92,7 @@ func (r *TodoFileRepo) DeleteTodoByID(ctx context.Context, id string) error {
 	return os.WriteFile(r.File, bs, 0o644)
 }
 
-// GetByID implements TodoRepository.
+// GetByID implements TodoBasicRepo.
 func (r *TodoFileRepo) GetByID(ctx context.Context, id string) (*Todo, error) {
 	store, err := r.getStore()
 	if err != nil {
@@ -107,7 +107,7 @@ func (r *TodoFileRepo) GetByID(ctx context.Context, id string) (*Todo, error) {
 	return nil, fmt.Errorf("todo with id[%s] not exist", id)
 }
 
-// List implements TodoRepository.
+// List implements TodoBatchRepo.
 func (r *TodoFileRepo) List(ctx context.Context) ([]*Todo, error) {
 	store, err := r.getStore()
 	if err != nil {
@@ -152,4 +152,4 @@ func (r *TodoFileRepo) getStore() (*TodoStore, error) {
 	return store, err
 }
 
-var _ TodoRepository = new(TodoFileRepo)
+var _ TodoRepo = new(TodoFileRepo)
