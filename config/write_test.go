@@ -28,7 +28,7 @@ func Test_writeConfigToToml_RoundTrip(t *testing.T) {
 	_, err = os.Stat(filepath.Join(dir, "test-server.toml"))
 	require.NoError(t, err)
 
-	readCfg, err := readSSHConfigFromToml(dir, "test-server")
+	readCfg, err := ReadSSHConfigFromToml(dir, "test-server")
 	require.NoError(t, err)
 	require.NotNil(t, readCfg.SSH)
 	require.Equal(t, cfg.SSH.User, readCfg.SSH.User)
@@ -53,7 +53,7 @@ func Test_writeConfigToToml_StripsEmptyStrings(t *testing.T) {
 	err := writeConfigToToml(cfg, dir, cfg.Alias, "ssh")
 	require.NoError(t, err)
 
-	readCfg, err := readSSHConfigFromToml(dir, "empty-fields")
+	readCfg, err := ReadSSHConfigFromToml(dir, "empty-fields")
 	require.NoError(t, err)
 	require.Equal(t, "test", readCfg.SSH.User)
 	require.Equal(t, "host", readCfg.SSH.Host)

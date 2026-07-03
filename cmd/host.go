@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -27,6 +28,7 @@ func init() {
 
 	hostCmd.AddCommand(hostAddCmd)
 	hostCmd.AddCommand(hostListCmd)
+	hostCmd.AddCommand(hostEditCmd)
 	hostCmd.AddCommand(hostCheckCmd)
 	hostCmd.AddCommand(hostDeployCmd)
 	hostCmd.AddCommand(hostUpCmd)
@@ -37,7 +39,7 @@ func init() {
 var hostCmd = &cobra.Command{
 	Use:     "host",
 	Short:   "host manager tool",
-	Example: "seneschal host [list|check|deploy|up|down]",
+	Example: "seneschal host [list|edit|check|deploy|up|down]",
 }
 
 var hostAddCmd = &cobra.Command{
@@ -144,6 +146,42 @@ var hostListCmd = &cobra.Command{
 			data = append(data, []string{k, v.SSH.Host, v.SSH.User})
 		}
 		util.ShowTable(data)
+		return nil
+	},
+}
+
+// host edit config
+var hostEditCmd = &cobra.Command{
+	Use:   "edit <alias>",
+	Short: "edit host config",
+	Example: "seneschal host edit myserver",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		alias := args[0]
+
+		configPath := filepath.Join(config.SSHConfigDir, alias+".toml")
+
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			return fmt.Errorf("host alias %q not found", alias)
+		}
+
+		edited, err := util.EditFile(configPath, nil)
+		if err != nil {
+			if errors.Is(err, util.ErrEditorExitedNonZero) {
+				slog.Warn("editor exited non-zero", "err", err)
+			} else {
+				return err
+			}
+		}
+
+		// Validate config after edit
+		_, err = config.ReadSSHConfigFromToml(config.SSHConfigDir, alias)
+		if err != nil {
+			return fmt.Errorf("config validation failed after edit: %w", err)
+		}
+
+		slog.Info("host config updated", "alias", alias)
+		_ = edited
 		return nil
 	},
 }

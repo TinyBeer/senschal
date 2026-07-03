@@ -32,7 +32,7 @@ func NewSSHConfig() *SSHConfig {
 	return new(SSHConfig)
 }
 
-func readSSHConfigFromToml(dir, name string) (*SSHConfig, error) {
+func ReadSSHConfigFromToml(dir, name string) (*SSHConfig, error) {
 	v := viper.New()
 	v.SetConfigName(name)
 	v.SetConfigType(file.Ext_TOML)
@@ -72,7 +72,7 @@ func getSSHConfigMap(dir string) (map[string]*SSHConfig, error) {
 		return nil, err
 	}
 	for _, name := range fileNames {
-		c, err := readSSHConfigFromToml(dir, name)
+		c, err := ReadSSHConfigFromToml(dir, name)
 		if err != nil {
 			return nil, err
 		}

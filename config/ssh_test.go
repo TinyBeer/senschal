@@ -19,7 +19,7 @@ func TestSSHAuthMethod(t *testing.T) {
 	require.Equal(t, SSHAuthMethod("key"), SSHAuthMethod_KEY)
 }
 
-func Test_readSSHConfigFromToml_Defaults(t *testing.T) {
+func Test_ReadSSHConfigFromToml_Defaults(t *testing.T) {
 	dir := t.TempDir()
 	content := `
 [ssh]
@@ -30,7 +30,7 @@ password = "secret"
 	err := os.WriteFile(filepath.Join(dir, "test.toml"), []byte(content), 0o644)
 	require.NoError(t, err)
 
-	cfg, err := readSSHConfigFromToml(dir, "test")
+	cfg, err := ReadSSHConfigFromToml(dir, "test")
 	require.NoError(t, err)
 	require.NotNil(t, cfg.SSH)
 	require.Equal(t, "testuser", cfg.SSH.User)
@@ -40,7 +40,7 @@ password = "secret"
 	require.Equal(t, 22, cfg.SSH.Port)
 }
 
-func Test_readSSHConfigFromToml_ExplicitValues(t *testing.T) {
+func Test_ReadSSHConfigFromToml_ExplicitValues(t *testing.T) {
 	dir := t.TempDir()
 	content := `
 [ssh]
@@ -53,7 +53,7 @@ private_key = "/path/to/key"
 	err := os.WriteFile(filepath.Join(dir, "explicit.toml"), []byte(content), 0o644)
 	require.NoError(t, err)
 
-	cfg, err := readSSHConfigFromToml(dir, "explicit")
+	cfg, err := ReadSSHConfigFromToml(dir, "explicit")
 	require.NoError(t, err)
 	require.Equal(t, "root", cfg.SSH.User)
 	require.Equal(t, "10.0.0.1", cfg.SSH.Host)
@@ -62,21 +62,21 @@ private_key = "/path/to/key"
 	require.Equal(t, "/path/to/key", cfg.SSH.PrivateKey)
 }
 
-func Test_readSSHConfigFromToml_NoSSHSection(t *testing.T) {
+func Test_ReadSSHConfigFromToml_NoSSHSection(t *testing.T) {
 	dir := t.TempDir()
 	content := `alias = "test-alias"`
 	err := os.WriteFile(filepath.Join(dir, "test.toml"), []byte(content), 0o644)
 	require.NoError(t, err)
 
-	cfg, err := readSSHConfigFromToml(dir, "test")
+	cfg, err := ReadSSHConfigFromToml(dir, "test")
 	require.NoError(t, err)
 	require.Nil(t, cfg.SSH)
 	require.Equal(t, "test-alias", cfg.Alias)
 }
 
-func Test_readSSHConfigFromToml_FileNotFound(t *testing.T) {
+func Test_ReadSSHConfigFromToml_FileNotFound(t *testing.T) {
 	dir := t.TempDir()
-	_, err := readSSHConfigFromToml(dir, "nonexistent")
+	_, err := ReadSSHConfigFromToml(dir, "nonexistent")
 	require.Error(t, err)
 }
 
