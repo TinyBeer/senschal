@@ -115,7 +115,7 @@ seneschal joy tpl exec mytpl -d ./out -s custom.toml -n myapp
 
 ### Bug 修复
 
-- [ ] 渲染多文件夹下的同名模板时，所有生成结果使用了相同模板
+- [x] 渲染多文件夹下的同名模板时，所有生成结果使用了相同模板
   原因：使用ParseFiles/ParseGlob时，使用文件名作为模板唯一索引，如果出现同名模板时候会进行覆盖
   解决方案：使用完整路径作为模板索引，参考：
 
@@ -157,9 +157,9 @@ seneschal joy tpl exec mytpl -d ./out -s custom.toml -n myapp
   ```
   
   执行计划：
-  - [ ] 使用 `pkg/util/file` 中的工具函数筛选文件
-  - [ ] 使用完整相对路径作为唯一索引，避免模板覆盖
-  - [ ] 忽略空文件夹，无效需求
+  - [x] 使用 `pkg/util/file` 中的工具函数筛选文件
+  - [x] 使用完整相对路径作为唯一索引，避免模板覆盖
+  - [x] 忽略空文件夹，无效需求
 
 ### 功能
 

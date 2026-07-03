@@ -44,44 +44,34 @@ func ExecuteTemplate(tplPath, genDir, settingPath string) error {
 
 	// 遍历 template 目录，收集文件和空目录
 	var tplFiles []string
-	var emptyDirs []string
+	tpl := template.New("root") // 根容器，无实际渲染用途
+
 	err = filepath.Walk(tplSrcDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if info.IsDir() {
-			entries, readErr := os.ReadDir(path)
-			if readErr != nil {
-				return readErr
-			}
-			if len(entries) == 0 {
-				rel, _ := filepath.Rel(tplSrcDir, path)
-				emptyDirs = append(emptyDirs, rel)
-			}
 			return nil
 		}
+
 		tplFiles = append(tplFiles, path)
-		return nil
+
+		// 关键：模板名 = 文件相对路径，全局唯一
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		// 解析模板
+		_, err = tpl.New(path).Parse(string(content))
+		return err
 	})
+
 	if err != nil {
 		return fmt.Errorf("failed to walk template dir: %w", err)
 	}
 
 	if len(tplFiles) == 0 {
 		return fmt.Errorf("execute template[%s] failed: nothing found in [%s]", tplPath, tplSrcDir)
-	}
-
-	// 解析模板
-	tplName := filepath.Base(tplPath)
-	tpl, err := template.New(tplName).ParseFiles(tplFiles...)
-	if err != nil {
-		return err
-	}
-
-	// 创建输出目录
-	err = os.MkdirAll(genDir, 0o755)
-	if err != nil {
-		return err
 	}
 
 	// 渲染模板文件并保留相对路径
@@ -96,12 +86,16 @@ func ExecuteTemplate(tplPath, genDir, settingPath string) error {
 			return err
 		}
 
+		err = os.MkdirAll(filepath.Dir(genPath), 0o755)
+		if err != nil {
+			return fmt.Errorf("failed to make gen path dir, err: %w", err)
+		}
 		f, err := os.OpenFile(genPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
 		if err != nil {
 			return err
 		}
 
-		err = tpl.ExecuteTemplate(f, filepath.Base(path), setting)
+		err = tpl.ExecuteTemplate(f, path, setting)
 		_ = f.Close()
 		if err != nil {
 			return fmt.Errorf("failed to execute template [%s]: %w", relPath, err)
