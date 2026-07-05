@@ -24,3 +24,13 @@ func UseTraceLogger(w io.Writer) {
 	logger := NewTraceLogger(w)
 	slog.SetDefault(logger)
 }
+
+// -----------封装Attr,简化使用，统一键名--------------
+
+const (
+	keyErr string = "err"
+)
+
+func ErrorAttr(err error) slog.Attr {
+	return slog.Any(keyErr, err)
+}

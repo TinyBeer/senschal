@@ -9,6 +9,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"os"
 	"os/exec"
@@ -18,6 +19,7 @@ import (
 	"testing"
 
 	"seneschal/config"
+	"seneschal/internal/ilog"
 
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ssh"
@@ -211,9 +213,9 @@ func (s *testSSHServer) handleSession(ch ssh.Channel, requests <-chan *ssh.Reque
 	_, _ = ch.SendRequest("exit-status", false, ssh.Marshal(struct{ Status uint32 }{status}))
 }
 
-func (s *testSSHServer) addr() string {
-	return fmt.Sprintf("127.0.0.1:%d", s.hostPort)
-}
+// func (s *testSSHServer) addr() string {
+// 	return fmt.Sprintf("127.0.0.1:%d", s.hostPort)
+// }
 
 func (s *testSSHServer) stop() {
 	s.mu.Lock()
@@ -429,6 +431,9 @@ func TestSSHClient_OpenReader(t *testing.T) {
 		require.NoError(t, err)
 
 		data, err := io.ReadAll(rc)
+		if err != nil {
+			slog.Error("failed to read from file", ilog.ErrorAttr(err))
+		}
 		require.Empty(t, data) // cat 失败时 stdout 为空
 		_ = rc.Close()
 	})

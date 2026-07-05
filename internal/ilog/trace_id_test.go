@@ -48,6 +48,6 @@ func TestGetTraceID_WithoutTraceID(t *testing.T) {
 }
 
 func TestGetTraceID_WrongType(t *testing.T) {
-	ctx := context.WithValue(context.Background(), traceIDKey, 12345)
+	ctx := context.WithValue(context.Background(), traceIDKey{}, 12345)
 	assert.Empty(t, GetTraceID(ctx))
 }

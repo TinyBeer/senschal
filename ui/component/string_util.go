@@ -30,7 +30,7 @@ func slidingWindowDisplayString(str string, width, frame int) string {
 
 func getDisplayLength(str string) int {
 	length := 0
-	for _, r := range []rune(str) {
+	for _, r := range str {
 		if isWideCharacter(r) {
 			length += 2
 		} else {
@@ -68,7 +68,7 @@ func getCandidate(str string, width int) []string {
 
 // containWideCharacter 判断字符串是否包含占用2个字符显示的字符（全角字符）
 func containWideCharacter(str string) bool {
-	for _, r := range []rune(str) {
+	for _, r := range str {
 		if isWideCharacter(r) {
 			return true
 		}

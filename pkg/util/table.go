@@ -3,8 +3,10 @@ package util
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"reflect"
+	"seneschal/internal/ilog"
 	"sort"
 
 	"github.com/olekukonko/tablewriter"
@@ -58,6 +60,18 @@ func ShowTable(data [][]string) {
 		return data[i+1][0] < data[j+1][0]
 	})
 	table.Header(data[0])
-	table.Bulk(data[1:])
-	table.Render()
+
+	var err error
+	err = table.Bulk(data[1:])
+	if err != nil {
+		slog.Error("bulk table failed",
+			ilog.ErrorAttr(err),
+		)
+	}
+	err = table.Render()
+	if err != nil {
+		slog.Error("render table failed",
+			ilog.ErrorAttr(err),
+		)
+	}
 }

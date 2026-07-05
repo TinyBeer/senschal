@@ -65,6 +65,16 @@ type DirEntry struct {
 	Stat FileStat
 }
 
+func NewDirEntry(
+	name string,
+	state FileStat,
+) DirEntry {
+	return DirEntry{
+		Name: name,
+		Stat: state,
+	}
+}
+
 // ===================== 顶层统一文件系统抽象接口 =====================
 type FileSystem interface {
 	Stat(ref *PathRef) (FileStat, error)
@@ -75,9 +85,7 @@ type FileSystem interface {
 }
 
 // ===================== 内部适配层（实现FileSystem，桥接localfs/sshfs逻辑） =====================
-type localFS struct {
-	cli *localClient
-}
+type localFS struct{}
 
 var _ FileSystem = (*localFS)(nil)
 
@@ -180,10 +188,7 @@ func (r *remoteFS) ListDir(ref *PathRef) ([]DirEntry, error) {
 
 	result := make([]DirEntry, 0, len(entries))
 	for _, entry := range entries {
-		result = append(result, DirEntry{
-			Name: entry.Name,
-			Stat: entry.Stat,
-		})
+		result = append(result, NewDirEntry(entry.Name, entry.Stat))
 	}
 	return result, nil
 }
@@ -195,7 +200,7 @@ func (r *remoteFS) MkdirAll(ref *PathRef) error {
 // ===================== 工厂方法：自动匹配本地/远端FileSystem =====================
 func GetFS(ref *PathRef, sshConfMap map[string]*config.SSHConfig) (FileSystem, error) {
 	if ref.IsLocal() {
-		return &localFS{cli: newLocalClient()}, nil
+		return &localFS{}, nil
 	}
 	conf, ok := sshConfMap[ref.Alias]
 	if !ok {

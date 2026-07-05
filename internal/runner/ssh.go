@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"seneschal/config"
+	"seneschal/internal/ilog"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -135,7 +136,13 @@ func TransferFileWithResume(client *ssh.Client, localFilePath, remoteFilePath st
 	output, err := session.CombinedOutput(statCommand)
 	var remoteFileSize int64
 	if err == nil {
-		fmt.Sscanf(string(output), "%d", &remoteFileSize)
+		_, err = fmt.Sscanf(string(output), "%d", &remoteFileSize)
+		if err != nil {
+			slog.Error(
+				"failed to scan remote file size from output",
+				ilog.ErrorAttr(err),
+			)
+		}
 	}
 
 	// 如果远程文件已存在且大小小于本地文件，则进行断点续传

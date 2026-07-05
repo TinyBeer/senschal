@@ -36,6 +36,7 @@ import (
 // ANSIBrightCyan
 // ANSIBrightWhite
 
+//nolint:unused
 var (
 	selectedWorkConfigStyle = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(termenv.ANSIYellow)).Background(lipgloss.ANSIColor(termenv.ANSIBrightBlue))
 	todoStyle               = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(termenv.ANSIYellow))
