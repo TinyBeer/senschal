@@ -305,3 +305,36 @@ func TestListDirRecursiveDir_PathIsFile(t *testing.T) {
 	_, err := ListDirRecursiveDir(filePath)
 	assert.Error(t, err)
 }
+
+// ---------------------------------------------------------------------------
+// SaveStringToFile
+// ---------------------------------------------------------------------------
+
+func TestSaveStringToFile_Success(t *testing.T) {
+	tmpDir := t.TempDir()
+	fPath := filepath.Join(tmpDir, "output.txt")
+
+	err := SaveStringToFile(fPath, "hello world")
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(fPath)
+	require.NoError(t, err)
+	assert.Equal(t, "hello world", string(content))
+}
+
+func TestSaveStringToFile_EmptyString(t *testing.T) {
+	tmpDir := t.TempDir()
+	fPath := filepath.Join(tmpDir, "empty.txt")
+
+	err := SaveStringToFile(fPath, "")
+	require.NoError(t, err)
+
+	content, err := os.ReadFile(fPath)
+	require.NoError(t, err)
+	assert.Empty(t, content)
+}
+
+func TestSaveStringToFile_InvalidPath(t *testing.T) {
+	err := SaveStringToFile("/no/such/dir/file.txt", "content")
+	assert.Error(t, err)
+}

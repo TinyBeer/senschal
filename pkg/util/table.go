@@ -43,9 +43,9 @@ func ShowTableWithSlice(ctx context.Context, data any) {
 		v := dv.Index(i)
 		if v.Kind() == reflect.Ptr {
 			v = v.Elem()
-			for j := range de.NumField() {
-				d = append(d, fmt.Sprint(v.Field(j)))
-			}
+		}
+		for j := range de.NumField() {
+			d = append(d, fmt.Sprint(v.Field(j)))
 		}
 		tdata = append(tdata, d)
 	}

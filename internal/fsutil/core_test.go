@@ -5,6 +5,8 @@ import (
 	"os"
 	"testing"
 
+	"seneschal/config"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -186,6 +188,172 @@ func TestLocalFS_OpenWrite(t *testing.T) {
 		require.NoError(t, err)
 		require.EqualValues(t, stat.Size(), len(content))
 	})
+}
+
+func TestLocalFS_MkdirAll(t *testing.T) {
+	fs := &localFS{}
+	tmpDir := t.TempDir()
+
+	t.Run("创建新目录", func(t *testing.T) {
+		newDir := tmpDir + "/new/sub/dir"
+		err := fs.MkdirAll(&PathRef{RawPath: newDir})
+		require.NoError(t, err)
+
+		stat, err := os.Stat(newDir)
+		require.NoError(t, err)
+		require.True(t, stat.IsDir())
+	})
+
+	t.Run("创建已存在目录不报错", func(t *testing.T) {
+		err := fs.MkdirAll(&PathRef{RawPath: tmpDir})
+		require.NoError(t, err)
+	})
+}
+
+func TestJoinPath(t *testing.T) {
+	tests := []struct {
+		name     string
+		isRemote bool
+		elems    []string
+		want     string
+	}{
+		{
+			name:     "本地路径使用filepath.Join",
+			isRemote: false,
+			elems:    []string{"/base", "sub", "file.txt"},
+			want:     "/base/sub/file.txt",
+		},
+		{
+			name:     "远端路径使用path.Join",
+			isRemote: true,
+			elems:    []string{"/base", "sub", "file.txt"},
+			want:     "/base/sub/file.txt",
+		},
+		{
+			name:     "空元素",
+			isRemote: false,
+			elems:    []string{},
+			want:     "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := joinPath(tt.isRemote, tt.elems...)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestNewTransfer(t *testing.T) {
+	confMap := map[string]*config.SSHConfig{
+		"dev": {Alias: "dev"},
+	}
+	tr := NewTransfer(confMap)
+	require.NotNil(t, tr)
+	require.NotNil(t, tr.sshConfigMap)
+	require.Equal(t, "dev", tr.sshConfigMap["dev"].Alias)
+}
+
+func TestGetFS_Local(t *testing.T) {
+	ref := &PathRef{IsRemote: false, RawPath: t.TempDir()}
+	fs, err := GetFS(ref, nil)
+	require.NoError(t, err)
+	require.NotNil(t, fs)
+
+	_, ok := fs.(*localFS)
+	require.True(t, ok, "expected localFS for local path")
+}
+
+func TestTransfer_CopyFile(t *testing.T) {
+	tr := NewTransfer(nil)
+	srcDir := t.TempDir()
+	dstDir := t.TempDir()
+	srcPath := srcDir + "/source.txt"
+	content := []byte("hello copy file")
+	err := os.WriteFile(srcPath, content, 0o644)
+	require.NoError(t, err)
+
+	t.Run("本地文件复制成功", func(t *testing.T) {
+		dstPath := dstDir + "/copied.txt"
+		srcRef := &PathRef{RawPath: srcPath}
+		dstRef := &PathRef{RawPath: dstPath}
+		err := tr.CopyFile(srcRef, dstRef)
+		require.NoError(t, err)
+
+		copied, err := os.ReadFile(dstPath)
+		require.NoError(t, err)
+		require.Equal(t, content, copied)
+	})
+
+	t.Run("源文件不存在返回错误", func(t *testing.T) {
+		srcRef := &PathRef{RawPath: srcDir + "/nonexistent.txt"}
+		dstRef := &PathRef{RawPath: dstDir + "/out.txt"}
+		err := tr.CopyFile(srcRef, dstRef)
+		require.Error(t, err)
+	})
+}
+
+func TestTransfer_CopyDir(t *testing.T) {
+	tr := NewTransfer(nil)
+	srcDir := t.TempDir()
+	dstDir := t.TempDir()
+
+	// 准备目录结构
+	err := os.MkdirAll(srcDir+"/sub", 0o755)
+	require.NoError(t, err)
+	err = os.WriteFile(srcDir+"/a.txt", []byte("aaa"), 0o644)
+	require.NoError(t, err)
+	err = os.WriteFile(srcDir+"/sub/b.txt", []byte("bbb"), 0o644)
+	require.NoError(t, err)
+
+	srcRef := &PathRef{RawPath: srcDir}
+	dstRef := &PathRef{RawPath: dstDir + "/copied"}
+
+	err = tr.CopyDir(srcRef, dstRef)
+	require.NoError(t, err)
+
+	// 验证文件已递归复制
+	contentA, err := os.ReadFile(dstDir + "/copied/a.txt")
+	require.NoError(t, err)
+	require.Equal(t, "aaa", string(contentA))
+
+	contentB, err := os.ReadFile(dstDir + "/copied/sub/b.txt")
+	require.NoError(t, err)
+	require.Equal(t, "bbb", string(contentB))
+}
+
+func TestTransfer_Upload(t *testing.T) {
+	tr := NewTransfer(nil)
+	srcDir := t.TempDir()
+	dstDir := t.TempDir()
+	srcPath := srcDir + "/local.txt"
+	content := []byte("upload content")
+	err := os.WriteFile(srcPath, content, 0o644)
+	require.NoError(t, err)
+
+	err = tr.Upload(srcPath, dstDir+"/uploaded.txt")
+	require.NoError(t, err)
+
+	uploaded, err := os.ReadFile(dstDir + "/uploaded.txt")
+	require.NoError(t, err)
+	require.Equal(t, content, uploaded)
+}
+
+func TestTransfer_Download(t *testing.T) {
+	tr := NewTransfer(nil)
+	srcDir := t.TempDir()
+	dstDir := t.TempDir()
+	srcPath := srcDir + "/remote.txt"
+	content := []byte("download content")
+	err := os.WriteFile(srcPath, content, 0o644)
+	require.NoError(t, err)
+
+	err = tr.Download(srcPath, dstDir+"/downloaded.txt")
+	require.NoError(t, err)
+
+	downloaded, err := os.ReadFile(dstDir + "/downloaded.txt")
+	require.NoError(t, err)
+	require.Equal(t, content, downloaded)
 }
 
 func TestLocalFS_ListDir(t *testing.T) {

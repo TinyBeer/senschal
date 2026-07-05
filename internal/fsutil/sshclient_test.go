@@ -17,6 +17,7 @@ import (
 	"runtime"
 	"sync"
 	"testing"
+	"time"
 
 	"seneschal/config"
 	"seneschal/internal/ilog"
@@ -526,4 +527,62 @@ func TestSSHClient_ListDir(t *testing.T) {
 		_, err := cli.ListDir(filepath.Join(workDir, "not_exist"))
 		require.Error(t, err)
 	})
+}
+
+
+func TestSSHClient_MkdirAll(t *testing.T) {
+	workDir := t.TempDir()
+	srv := startPasswordSSHServer(t, workDir)
+	defer srv.stop()
+
+	cfg := mkSSHConfig("127.0.0.1", srv.hostPort, "test-user", testPassword)
+	cli, err := newSSHClient(cfg)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = cli.Close() })
+
+	t.Run("创建深层目录", func(t *testing.T) {
+		remoteDir := filepath.Join(workDir, "a", "b", "c")
+		err := cli.MkdirAll(remoteDir)
+		require.NoError(t, err)
+
+		stat, err := cli.Stat(remoteDir)
+		require.NoError(t, err)
+		require.True(t, stat.Exist)
+		require.True(t, stat.IsDir)
+	})
+
+	t.Run("创建已存在的目录不报错", func(t *testing.T) {
+		err := cli.MkdirAll(workDir)
+		require.NoError(t, err)
+	})
+}
+
+func TestSSHClient_OpenWriter(t *testing.T) {
+	workDir := t.TempDir()
+	srv := startPasswordSSHServer(t, workDir)
+	defer srv.stop()
+
+	cfg := mkSSHConfig("127.0.0.1", srv.hostPort, "test-user", testPassword)
+	cli, err := newSSHClient(cfg)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = cli.Close() })
+
+	content := []byte("written via OpenWriter")
+	remotePath := filepath.Join(workDir, "writer_test.txt")
+
+	wc, err := cli.OpenWriter(remotePath)
+	require.NoError(t, err)
+
+	n, err := wc.Write(content)
+	require.NoError(t, err)
+	require.Equal(t, len(content), n)
+
+	err = wc.Close()
+	require.NoError(t, err)
+
+	// 验证文件内容
+	time.Sleep(100 * time.Millisecond)
+	got, err := cli.runCommand("cat " + remotePath)
+	require.NoError(t, err)
+	require.Equal(t, string(content), got)
 }

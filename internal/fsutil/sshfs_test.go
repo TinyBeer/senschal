@@ -183,6 +183,32 @@ func TestRemoteFS_OpenWrite(t *testing.T) {
 	})
 }
 
+func TestRemoteFS_MkdirAll(t *testing.T) {
+	path := "/remote/new/dir"
+	ref := &PathRef{RawPath: path}
+
+	t.Run("创建目录成功", func(t *testing.T) {
+		mockCli := new(MockSSHClient)
+		fs := &remoteFS{cli: mockCli}
+		mockCli.On("MkdirAll", path).Return(nil)
+
+		err := fs.MkdirAll(ref)
+		require.NoError(t, err)
+		mockCli.AssertExpectations(t)
+	})
+
+	t.Run("创建失败返回错误", func(t *testing.T) {
+		mockCli := new(MockSSHClient)
+		fs := &remoteFS{cli: mockCli}
+		testErr := errors.New("permission denied")
+		mockCli.On("MkdirAll", path).Return(testErr)
+
+		err := fs.MkdirAll(ref)
+		require.ErrorIs(t, err, testErr)
+		mockCli.AssertExpectations(t)
+	})
+}
+
 func TestRemoteFS_ListDir(t *testing.T) {
 	dir := "/data/"
 	ref := &PathRef{RawPath: dir}
