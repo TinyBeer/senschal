@@ -28,6 +28,6 @@ func NewJenkinsClient(alias string) (*gojenkins.Jenkins, context.Context, error)
 	if err != nil {
 		return nil, nil, fmt.Errorf("connect to jenkins failed, err: %w", err)
 	}
-	slog.Info("connected to jenkins successfully")
+	slog.InfoContext(ctx, "connected to jenkins successfully")
 	return jenkins, ctx, nil
 }

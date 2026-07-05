@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
 	"seneschal/cmd"
@@ -11,9 +12,11 @@ func main() {
 
 	ilog.UseTraceLogger(os.Stdout)
 
-	err := cmd.Execut()
+	ctx := ilog.NewTraceCtx(context.Background())
+	err := cmd.Execut(ctx)
 	if err != nil {
-		slog.Error(
+		slog.ErrorContext(
+			ctx,
 			"failed to execute command",
 			ilog.ErrorAttr(
 				err,

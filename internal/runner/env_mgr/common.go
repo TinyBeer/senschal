@@ -1,6 +1,10 @@
 package envmgr
 
-import "seneschal/config"
+import (
+	"context"
+
+	"seneschal/config"
+)
 
 //go:generate stringer -type=Environment -linecomment
 
@@ -13,5 +17,5 @@ const (
 type IEnvMgr interface {
 	GetName() Environment
 	Check(c *config.SSHConfig) (any, error)
-	Deploy(c *config.SSHConfig) error
+	Deploy(ctx context.Context, c *config.SSHConfig) error
 }

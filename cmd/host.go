@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -101,7 +102,7 @@ var hostAddCmd = &cobra.Command{
 			}
 
 			privateKeyPath = dstKeyPath
-			slog.Info("private key copied", "path", dstKeyPath)
+			slog.InfoContext(cmd.Context(), "private key copied", "path", dstKeyPath)
 		} else {
 			method = config.SSHAuthMethod_PW
 		}
@@ -122,7 +123,7 @@ var hostAddCmd = &cobra.Command{
 			return err
 		}
 
-		slog.Info("SSH config saved", "alias", alias)
+		slog.InfoContext(cmd.Context(), "SSH config saved", "alias", alias)
 		return nil
 	},
 }
@@ -145,7 +146,7 @@ var hostListCmd = &cobra.Command{
 		for k, v := range m {
 			data = append(data, []string{k, v.SSH.Host, v.SSH.User})
 		}
-		util.ShowTable(data)
+		util.ShowTable(cmd.Context(), data)
 		return nil
 	},
 }
@@ -168,7 +169,7 @@ var hostEditCmd = &cobra.Command{
 		edited, err := util.EditFile(configPath, nil)
 		if err != nil {
 			if errors.Is(err, util.ErrEditorExitedNonZero) {
-				slog.Warn("editor exited non-zero", "err", err)
+				slog.WarnContext(cmd.Context(), "editor exited non-zero", "err", err)
 			} else {
 				return err
 			}
@@ -180,7 +181,7 @@ var hostEditCmd = &cobra.Command{
 			return fmt.Errorf("config validation failed after edit: %w", err)
 		}
 
-		slog.Info("host config updated", "alias", alias)
+		slog.InfoContext(cmd.Context(), "host config updated", "alias", alias)
 		_ = edited
 		return nil
 	},
@@ -238,7 +239,7 @@ Directory behavior:
 				continue
 			}
 			if _, ok := scm[alias]; !ok {
-				slog.Warn("host config not found, skip", "alias", alias)
+				slog.WarnContext(cmd.Context(), "host config not found, skip", "alias", alias)
 				continue
 			}
 
@@ -246,7 +247,7 @@ Directory behavior:
 				// dir/* 模式：逐条拷贝到远端，不保留外层目录名
 				entries, err := localFs.ListDir(localRef)
 				if err != nil {
-					slog.Warn("failed to list dir", "path", localPath, "err", err)
+					slog.WarnContext(cmd.Context(), "failed to list dir", "path", localPath, "err", err)
 					continue
 				}
 				for _, entry := range entries {
@@ -256,11 +257,11 @@ Directory behavior:
 					dstRef, _ := fsutil.Parse(dstEntry)
 					if entry.Stat.IsDir {
 						if err := transfer.CopyDir(srcRef, dstRef); err != nil {
-							slog.Warn("upload subdir failed", "name", entry.Name, "alias", alias, "err", err)
+							slog.WarnContext(cmd.Context(), "upload subdir failed", "name", entry.Name, "alias", alias, "err", err)
 						}
 					} else {
 						if err := transfer.CopyFile(srcRef, dstRef); err != nil {
-							slog.Warn("upload file failed", "name", entry.Name, "alias", alias, "err", err)
+							slog.WarnContext(cmd.Context(), "upload file failed", "name", entry.Name, "alias", alias, "err", err)
 						}
 					}
 				}
@@ -270,18 +271,18 @@ Directory behavior:
 				dstPath := alias + ":" + path.Join(rawRemotePath, dirName)
 				dstRef, _ := fsutil.Parse(dstPath)
 				if err := transfer.CopyDir(localRef, dstRef); err != nil {
-					slog.Warn("upload dir failed", "alias", alias, "err", err)
+					slog.WarnContext(cmd.Context(), "upload dir failed", "alias", alias, "err", err)
 					continue
 				}
 			} else {
 				// 单文件上传
 				fullRemotePath := alias + ":" + rawRemotePath
 				if err := transfer.Upload(localPath, fullRemotePath); err != nil {
-					slog.Warn("upload file to alias failed", "alias", alias, "err", err)
+					slog.WarnContext(cmd.Context(), "upload file to alias failed", "alias", alias, "err", err)
 					continue
 				}
 			}
-			slog.Info("upload success", "src", rawLocalPath, "alias", alias, "remote", rawRemotePath)
+			slog.InfoContext(cmd.Context(), "upload success", "src", rawLocalPath, "alias", alias, "remote", rawRemotePath)
 		}
 		return nil
 	},
@@ -351,11 +352,11 @@ Directory behavior:
 				dstRef2, _ := fsutil.Parse(dstEntry)
 				if entry.Stat.IsDir {
 					if err := transfer.CopyDir(srcRef2, dstRef2); err != nil {
-						slog.Warn("download subdir failed", "name", entry.Name, "err", err)
+						slog.WarnContext(cmd.Context(), "download subdir failed", "name", entry.Name, "err", err)
 					}
 				} else {
 					if err := transfer.CopyFile(srcRef2, dstRef2); err != nil {
-						slog.Warn("download file failed", "name", entry.Name, "err", err)
+						slog.WarnContext(cmd.Context(), "download file failed", "name", entry.Name, "err", err)
 					}
 				}
 			}
@@ -371,7 +372,7 @@ Directory behavior:
 				return fmt.Errorf("下载文件失败: %w", err)
 			}
 		}
-		slog.Info("download success", "alias", alias, "remote", rawRemotePath, "local", localPath)
+		slog.InfoContext(cmd.Context(), "download success", "alias", alias, "remote", rawRemotePath, "local", localPath)
 		return nil
 	},
 }
@@ -383,7 +384,7 @@ var hostCheckCmd = &cobra.Command{
 	Example: "seneschal host check <alias1,alias2> <env>",
 	Args:    cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		scm, sshAliasList, envMgrList, err := prepareHostEnv(args)
+		scm, sshAliasList, envMgrList, err := prepareHostEnv(cmd.Context(), args)
 		if err != nil {
 			return err
 		}
@@ -416,7 +417,7 @@ var hostCheckCmd = &cobra.Command{
 			}
 			data = append(data, tblRow)
 		}
-		util.ShowTable(data)
+		util.ShowTable(cmd.Context(), data)
 		return nil
 	},
 }
@@ -428,7 +429,7 @@ var hostDeployCmd = &cobra.Command{
 	Example: "seneschal host deploy <alias1,alias2> <env>",
 	Args:    cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		scm, sshAliasList, envMgrList, err := prepareHostEnv(args)
+		scm, sshAliasList, envMgrList, err := prepareHostEnv(cmd.Context(), args)
 		if err != nil {
 			return err
 		}
@@ -436,10 +437,10 @@ var hostDeployCmd = &cobra.Command{
 		for _, alias := range sshAliasList {
 			c := scm[alias]
 			for _, mgr := range envMgrList {
-				slog.Info("environment manager deploying", "name", mgr.GetName())
-				err := mgr.Deploy(c)
+				slog.InfoContext(cmd.Context(), "environment manager deploying", "name", mgr.GetName())
+				err := mgr.Deploy(cmd.Context(), c)
 				if err != nil {
-					slog.Warn("deploy environment failed", "config", c, "err", err)
+					slog.WarnContext(cmd.Context(), "deploy environment failed", "config", c, "err", err)
 				}
 			}
 		}
@@ -449,7 +450,7 @@ var hostDeployCmd = &cobra.Command{
 
 // prepareHostEnv loads env/ssh config and validates aliases.
 // Shared by check and deploy commands.
-func prepareHostEnv(args []string) (scm map[string]*config.SSHConfig, aliases []string, envMgrs []envmgr.IEnvMgr, err error) {
+func prepareHostEnv(ctx context.Context, args []string) (scm map[string]*config.SSHConfig, aliases []string, envMgrs []envmgr.IEnvMgr, err error) {
 	ecm, err := config.GetEnvConfigMap()
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to get env config: %w", err)
@@ -472,7 +473,7 @@ func prepareHostEnv(args []string) (scm map[string]*config.SSHConfig, aliases []
 
 	for _, alias := range aliases {
 		if _, ok := scm[alias]; !ok {
-			slog.Warn("host config not found", "alias", alias)
+			slog.WarnContext(ctx, "host config not found", "alias", alias)
 			err = fmt.Errorf("存在未找到的机器配置")
 		}
 	}

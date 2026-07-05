@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"html/template"
@@ -49,7 +50,7 @@ var joyCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to get project config: %w", err)
 		}
-		util.ShowTableWithSlice(list)
+		util.ShowTableWithSlice(cmd.Context(), list)
 		return nil
 	},
 }
@@ -71,7 +72,8 @@ var joyInterCmd = &cobra.Command{
 		serivce := split[0]
 		apiName := split[1]
 
-		slog.Info("register interface", "project", projectName, "service", serivce, "api", apiName)
+		ctx := cmd.Context()
+		slog.InfoContext(ctx, "register interface", "project", projectName, "service", serivce, "api", apiName)
 		list, err := config.GetProjectConfigList(config.ProjectDir)
 		if err != nil {
 			return fmt.Errorf("failed to get project config: %w", err)
@@ -125,11 +127,11 @@ var joyInterCmd = &cobra.Command{
 		reqs := []string{apiReq}
 		rets := []string{apiRes}
 
-		slog.Debug("proto file info",
-		"lobby", targetLobbyProtoFile,
-		"service", targetServiceProtoFile,
-		"register", pc.GetLobbyRegisterFile(),
-	)
+		slog.DebugContext(ctx, "proto file info",
+			"lobby", targetLobbyProtoFile,
+			"service", targetServiceProtoFile,
+			"register", pc.GetLobbyRegisterFile(),
+		)
 
 		if registerLobby {
 			contain, err := file.FileContain(targetLobbyProtoFile, file.ReplaceProbe_Message.String())
@@ -217,11 +219,11 @@ var joyTplCmd = &cobra.Command{
 	Short:   "list template",
 	Example: "seneschal joy tpl",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		infoList, err := joyTplListTemplateInfo(config.TplDir)
+		infoList, err := joyTplListTemplateInfo(cmd.Context(), config.TplDir)
 		if err != nil {
 			return fmt.Errorf("failed to list templates: %w", err)
 		}
-		util.ShowTableWithSlice(infoList)
+		util.ShowTableWithSlice(cmd.Context(), infoList)
 		return nil
 	},
 }
@@ -232,14 +234,14 @@ type JoyTplTemplateInfo struct {
 	Path  string
 }
 
-func joyTplListTemplateInfo(dir string) ([]*JoyTplTemplateInfo, error) {
+func joyTplListTemplateInfo(ctx context.Context, dir string) ([]*JoyTplTemplateInfo, error) {
 	dirList, err := file.ListDirName(dir)
 	if err != nil {
 		return nil, err
 	}
 	infoList := make([]*JoyTplTemplateInfo, 0, len(dirList))
 	for _, dir := range dirList {
-		info, err := joyTplGetTemplateInfo(filepath.Join(config.TplDir, dir))
+		info, err := joyTplGetTemplateInfo(ctx, filepath.Join(config.TplDir, dir))
 		if err != nil {
 			return nil, err
 		}
@@ -248,7 +250,7 @@ func joyTplListTemplateInfo(dir string) ([]*JoyTplTemplateInfo, error) {
 	return infoList, nil
 }
 
-func joyTplGetTemplateInfo(dir string) (*JoyTplTemplateInfo, error) {
+func joyTplGetTemplateInfo(ctx context.Context, dir string) (*JoyTplTemplateInfo, error) {
 	settingPath := filepath.Join(dir, config.TplSettingName+"."+file.Ext_TOML)
 	dirName := filepath.Base(dir)
 
@@ -261,7 +263,7 @@ func joyTplGetTemplateInfo(dir string) (*JoyTplTemplateInfo, error) {
 	_, err := os.Stat(settingPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			slog.Warn("setting file not found", "path", settingPath)
+			slog.WarnContext(ctx, "setting file not found", "path", settingPath)
 			return info, nil
 		}
 		return nil, err
@@ -300,7 +302,7 @@ var joyTplExecCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		tplName := args[0]
-		infoList, err := joyTplListTemplateInfo(config.TplDir)
+		infoList, err := joyTplListTemplateInfo(cmd.Context(), config.TplDir)
 		if err != nil {
 			return fmt.Errorf("failed to list templates: %w", err)
 		}
@@ -346,7 +348,7 @@ var joyTplEditCmd = &cobra.Command{
 	Example: "seneschal joy tpl edit my-template",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		tplName := args[0]
-		infoList, err := joyTplListTemplateInfo(config.TplDir)
+		infoList, err := joyTplListTemplateInfo(cmd.Context(), config.TplDir)
 		if err != nil {
 			return fmt.Errorf("failed to list templates: %w", err)
 		}
@@ -363,7 +365,7 @@ var joyTplEditCmd = &cobra.Command{
 				if err != nil {
 					return fmt.Errorf("edit file error: %w", err)
 				}
-				slog.Info("template setting edited", "template", tplName, "path", settingPath)
+				slog.InfoContext(cmd.Context(), "template setting edited", "template", tplName, "path", settingPath)
 				return nil
 			}
 		}

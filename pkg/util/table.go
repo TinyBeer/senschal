@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -15,7 +16,7 @@ import (
 
 var Err_InvalidDataType = errors.New("invalid data type")
 
-func ShowTableWithSlice(data any) {
+func ShowTableWithSlice(ctx context.Context, data any) {
 	dt := reflect.TypeOf(data)
 	dv := reflect.ValueOf(data)
 	if dt.Kind() != reflect.Slice {
@@ -48,10 +49,10 @@ func ShowTableWithSlice(data any) {
 		}
 		tdata = append(tdata, d)
 	}
-	ShowTable(tdata)
+	ShowTable(ctx, tdata)
 }
 
-func ShowTable(data [][]string) {
+func ShowTable(ctx context.Context, data [][]string) {
 	table := tablewriter.NewTable(
 		os.Stdout,
 		tablewriter.WithRenderer(renderer.NewMarkdown()),
@@ -64,13 +65,13 @@ func ShowTable(data [][]string) {
 	var err error
 	err = table.Bulk(data[1:])
 	if err != nil {
-		slog.Error("bulk table failed",
+		slog.ErrorContext(ctx, "bulk table failed",
 			ilog.ErrorAttr(err),
 		)
 	}
 	err = table.Render()
 	if err != nil {
-		slog.Error("render table failed",
+		slog.ErrorContext(ctx, "render table failed",
 			ilog.ErrorAttr(err),
 		)
 	}

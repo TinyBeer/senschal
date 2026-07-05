@@ -34,7 +34,7 @@ func init() {
 func ensureJob(ctx context.Context, jenkins *gojenkins.Jenkins, uniqueTbl map[string]struct{}, jobName, xmlContent string, overwrite bool) error {
 	if _, exists := uniqueTbl[jobName]; exists {
 		if !overwrite {
-			slog.Warn("job already exists, skip", "job", jobName)
+			slog.WarnContext(ctx, "job already exists, skip", "job", jobName)
 			return nil
 		}
 		job, err := jenkins.GetJob(ctx, jobName)
@@ -44,7 +44,7 @@ func ensureJob(ctx context.Context, jenkins *gojenkins.Jenkins, uniqueTbl map[st
 		if err = job.UpdateConfig(ctx, xmlContent); err != nil {
 			return fmt.Errorf("failed to update job [%s], err: %w", jobName, err)
 		}
-		slog.Info("job updated successfully", "job", jobName)
+		slog.InfoContext(ctx, "job updated successfully", "job", jobName)
 		return nil
 	}
 
@@ -52,7 +52,7 @@ func ensureJob(ctx context.Context, jenkins *gojenkins.Jenkins, uniqueTbl map[st
 	if err != nil {
 		return fmt.Errorf("failed to create job [%s], err: %w", jobName, err)
 	}
-	slog.Info("job created successfully", "job", jobName)
+	slog.InfoContext(ctx, "job created successfully", "job", jobName)
 	return nil
 }
 
@@ -70,7 +70,7 @@ var jenkinsCmd = &cobra.Command{
 		for _, jc := range jcm {
 			data = append(data, []string{jc.Alias, jc.Host, jc.UserName})
 		}
-		util.ShowTable(data)
+		util.ShowTable(cmd.Context(), data)
 		return nil
 	},
 }
@@ -96,7 +96,7 @@ var jenkinsListCmd = &cobra.Command{
 		for _, job := range innerJobs {
 			data = append(data, []string{job.Name})
 		}
-		util.ShowTable(data)
+		util.ShowTable(cmd.Context(), data)
 
 		return nil
 	},
@@ -129,7 +129,7 @@ var jenkinsAddCmd = &cobra.Command{
 		if err := config.WriteJenkinsConfig(cfg); err != nil {
 			return fmt.Errorf("failed to write jenkins config: %w", err)
 		}
-		slog.Info("jenkins config saved", "alias", alias)
+		slog.InfoContext(cmd.Context(), "jenkins config saved", "alias", alias)
 		return nil
 	},
 }
@@ -201,18 +201,18 @@ var jenkinsCreateCmd = &cobra.Command{
 				jobDir := filepath.Join(dirPath, jobName)
 				xmlFiles, err := filepath.Glob(filepath.Join(jobDir, "*.xml"))
 				if err != nil || len(xmlFiles) == 0 {
-					slog.Warn("no xml config found in directory, skip", "job", jobName)
+					slog.WarnContext(ctx, "no xml config found in directory, skip", "job", jobName)
 					continue
 				}
 
 				xmlContent, err := os.ReadFile(xmlFiles[0])
 				if err != nil {
-					slog.Warn("failed to read xml config for job", "job", jobName, "err", err)
+					slog.WarnContext(ctx, "failed to read xml config for job", "job", jobName, "err", err)
 					continue
 				}
 
 				if err = ensureJob(ctx, jenkins, uniqueTbl, jobName, string(xmlContent), overwrite); err != nil {
-					slog.Warn("skip job", "err", err)
+					slog.WarnContext(ctx, "skip job", "err", err)
 					continue
 				}
 			}

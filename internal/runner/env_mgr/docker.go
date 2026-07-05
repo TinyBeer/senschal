@@ -1,6 +1,7 @@
 package envmgr
 
 import (
+	"context"
 	"bytes"
 	"fmt"
 	"log/slog"
@@ -167,7 +168,7 @@ func parseVersion(v string) ([]int, error) {
 }
 
 // Deploy implements IEnvMgr.
-func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
+func (e *EnvMgrDocker) Deploy(ctx context.Context, c *config.SSHConfig) error {
 	if e.cnf == nil || !e.cnf.Enable {
 		return nil
 	}
@@ -182,7 +183,7 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 	}
 	transfer := fsutil.NewTransfer(scm)
 
-	slog.Debug("check docker ...")
+	slog.DebugContext(ctx, "check docker ...")
 	// 1. check docker installment
 	res, err := e.Check(c)
 	if err != nil {
@@ -195,14 +196,14 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 		// 2. deploy docker invironment
 		if !diagnosis.IsInstalled {
 			// 1.1 try to install docker with net
-			slog.Debug("install docker with internet ...")
+			slog.DebugContext(ctx, "install docker with internet ...")
 			output, err := se.ExecuteCommand("curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun")
 			if err != nil {
 				return fmt.Errorf("failed to install docker with internet, err: %v", err)
 			}
 			result := string(bytes.Trim(output, " \n"))
 			if strings.Contains(result, "Server: Docker Engine - Community") {
-				slog.Debug("install docker with internet ok...")
+				slog.DebugContext(ctx, "install docker with internet ok...")
 			} else {
 				// 1.2 try to install docker with deb
 				err = transfer.Upload(config.DockerDebDir, c.Alias+":ops")
@@ -214,7 +215,7 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 				if err != nil {
 					return err
 				}
-				slog.Debug("install script output", "output", string(output))
+				slog.DebugContext(ctx, "install script output", "output", string(output))
 			}
 		}
 		if !diagnosis.HaveDockerGroup {
@@ -224,7 +225,7 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 				if err.Error() != "Process exited with status 2" {
 					return err
 				}
-				slog.Warn("missing docker group")
+				slog.WarnContext(ctx, "missing docker group")
 				_, err = se.ExecuteCommand("sudo groupadd docker")
 				if err != nil {
 					return err
@@ -237,7 +238,7 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 				if err.Error() != "Process exited with status 1" {
 					return err
 				}
-				slog.Warn("user not in docker group")
+				slog.WarnContext(ctx, "user not in docker group")
 				_, err = se.ExecuteCommand("sudo usermod -aG docker $USER & newgrp docker")
 				if err != nil {
 					return err
@@ -246,8 +247,8 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 		}
 		if len(diagnosis.MissingImageList) != 0 {
 			//  1.3 load images
-			slog.Debug("docker images loading ...")
-			err := runner.DockerLoadImageList(diagnosis.MissingImageList)
+			slog.DebugContext(ctx, "docker images loading ...")
+			err := runner.DockerLoadImageList(ctx, diagnosis.MissingImageList)
 			if err != nil {
 				return err
 			}
@@ -265,7 +266,7 @@ func (e *EnvMgrDocker) Deploy(c *config.SSHConfig) error {
 			if err != nil {
 				return err
 			}
-			slog.Debug("load output", "output", string(output))
+			slog.DebugContext(ctx, "load output", "output", string(output))
 
 		}
 	}

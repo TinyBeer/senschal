@@ -2,20 +2,21 @@ package runner
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"log/slog"
 
 	"seneschal/config"
 )
 
-func DockerLoadImageList(imageList []config.Image) error {
+func DockerLoadImageList(ctx context.Context, imageList []config.Image) error {
 	var needSaveList []config.Image
 	for _, image := range imageList {
 		if !image.LocalFileExist() {
 			needSaveList = append(needSaveList, image)
 		}
 	}
-	err := DockerPullImageList(needSaveList)
+	err := DockerPullImageList(ctx, needSaveList)
 	if err != nil {
 		return err
 	}
@@ -24,12 +25,12 @@ func DockerLoadImageList(imageList []config.Image) error {
 		if err != nil {
 			return err
 		}
-		slog.Debug("output", "output", string(bs))
+		slog.DebugContext(ctx, "output", "output", string(bs))
 	}
 	return nil
 }
 
-func DockerPullImageList(imageList []config.Image) error {
+func DockerPullImageList(ctx context.Context, imageList []config.Image) error {
 	output, err := ExecuteCommand(`docker images --format "{{.Repository}}:{{.Tag}}"`)
 	if err != nil {
 		return fmt.Errorf("failed to list docker images, err: %v", err)
@@ -49,7 +50,7 @@ func DockerPullImageList(imageList []config.Image) error {
 		if err != nil {
 			return err
 		}
-		slog.Debug("output", "output", string(bs))
+		slog.DebugContext(ctx, "output", "output", string(bs))
 	}
 	return nil
 }

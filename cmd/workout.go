@@ -75,7 +75,7 @@ var workoutCmd = &cobra.Command{
 			for _, wc := range wcList {
 				data = append(data, []string{wc.Name})
 			}
-			util.ShowTable(data)
+			util.ShowTable(cmd.Context(), data)
 			return nil
 		}
 		var wc *config.WorkoutConfig

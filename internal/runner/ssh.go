@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -113,7 +114,7 @@ func (e *SSHExecutor) ExecuteCommand(command string) ([]byte, error) {
 // }
 
 // 断点续传文件
-func TransferFileWithResume(client *ssh.Client, localFilePath, remoteFilePath string) error {
+func TransferFileWithResume(ctx context.Context, client *ssh.Client, localFilePath, remoteFilePath string) error {
 	localFile, err := os.Open(localFilePath)
 	if err != nil {
 		return fmt.Errorf("打开本地文件 %s 时出错: %s", localFilePath, err)
@@ -138,7 +139,7 @@ func TransferFileWithResume(client *ssh.Client, localFilePath, remoteFilePath st
 	if err == nil {
 		_, err = fmt.Sscanf(string(output), "%d", &remoteFileSize)
 		if err != nil {
-			slog.Error(
+			slog.ErrorContext(ctx, 
 				"failed to scan remote file size from output",
 				ilog.ErrorAttr(err),
 			)
@@ -147,7 +148,7 @@ func TransferFileWithResume(client *ssh.Client, localFilePath, remoteFilePath st
 
 	// 如果远程文件已存在且大小小于本地文件，则进行断点续传
 	if remoteFileSize > 0 && remoteFileSize < localFileInfo.Size() {
-		slog.Info("resuming transfer", "bytes", remoteFileSize)
+		slog.InfoContext(ctx, "resuming transfer", "bytes", remoteFileSize)
 		if _, err := localFile.Seek(remoteFileSize, io.SeekStart); err != nil {
 			return fmt.Errorf("定位本地文件 %s 时出错: %s", localFilePath, err)
 		}
@@ -170,7 +171,7 @@ func TransferFileWithResume(client *ssh.Client, localFilePath, remoteFilePath st
 		}
 	} else if remoteFileSize == 0 {
 		// 远程文件不存在，从头开始传输
-		slog.Info("starting fresh transfer")
+		slog.InfoContext(ctx, "starting fresh transfer")
 		stdin, err := session.StdinPipe()
 		if err != nil {
 			return fmt.Errorf("获取 SSH 会话标准输入管道时出错: %s", err)
@@ -188,7 +189,7 @@ func TransferFileWithResume(client *ssh.Client, localFilePath, remoteFilePath st
 			return fmt.Errorf("等待 SSH 会话完成复制命令时出错: %s", err)
 		}
 	} else {
-		slog.Info("remote file already complete, skip transfer")
+		slog.InfoContext(ctx, "remote file already complete, skip transfer")
 	}
 
 	return nil

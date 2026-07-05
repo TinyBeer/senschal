@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"seneschal/internal/ilog"
@@ -42,8 +43,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&output, "output", "o", "table", "output format (table, json, yaml)")
 }
 
-func Execut() error {
-	return rootCmd.Execute()
+func Execut(ctx context.Context) error {
+	return rootCmd.ExecuteContext(ctx)
 }
 
 // getBoolFlag is a helper to parse a bool flag and wrap the error.

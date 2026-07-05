@@ -35,7 +35,7 @@ var todoCmd = &cobra.Command{
 			return nil
 		}
 
-		util.ShowTableWithSlice(list)
+		util.ShowTableWithSlice(cmd.Context(), list)
 		return nil
 	},
 }
@@ -53,7 +53,7 @@ var todoAddCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to add todo: %w", err)
 		}
-		slog.Info("add todo success", "content", content, "id", id)
+		slog.InfoContext(cmd.Context(), "add todo success", "content", content, "id", id)
 		return nil
 	},
 }
@@ -71,7 +71,7 @@ var todoDoneCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to complete todo: %w", err)
 		}
-		slog.Info("complete todo success", "id", id)
+		slog.InfoContext(cmd.Context(), "complete todo success", "id", id)
 		return nil
 	},
 }
@@ -89,7 +89,7 @@ var todoDelCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to delete todo: %w", err)
 		}
-		slog.Info("delete todo success", "id", id)
+		slog.InfoContext(cmd.Context(), "delete todo success", "id", id)
 		return nil
 	},
 }

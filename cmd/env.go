@@ -36,7 +36,7 @@ var envCmd = &cobra.Command{
 			}
 			data = append(data, []string{alias, abstract})
 		}
-		util.ShowTable(data)
+		util.ShowTable(cmd.Context(), data)
 		return nil
 	},
 }

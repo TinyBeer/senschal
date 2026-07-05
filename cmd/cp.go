@@ -81,7 +81,7 @@ Examples:
 
 		transfer := fsutil.NewTransfer(scm)
 
-		slog.Info("cp", "src", srcPath, "dst", dstPath)
+		slog.InfoContext(cmd.Context(), "cp", "src", srcPath, "dst", dstPath)
 
 		if srcStat.IsDir {
 			if err := transfer.CopyDir(srcRef, dstRef); err != nil {
