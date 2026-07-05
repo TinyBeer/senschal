@@ -78,13 +78,18 @@ lint: vet
 	@echo -e "$(GREEN)=== golangci-lint 代码规范检查 ===$(END)"
 	$(GOLINT) run ./...
 
+.PHONY: lint-diff
+lint-diff: vet
+	@echo -e "$(GREEN)=== golangci-lint 代码规范检查 ===$(END)"
+	$(GOLINT) run --new ./...
+
 # 3. 单元测试
 .PHONY: mk_out
 mk_out:
 	@mkdir -p $(OUT_DIR)
 
 .PHONY: test
-test: mk_out vet
+test: mk_out vet lint-diff
 	@echo -e "$(GREEN)=== 执行单元测试 ===$(END)"
 	$(GO_TEST) -race -coverprofile=$(OUT_DIR)/coverage.out ./...
 
@@ -95,13 +100,13 @@ cover: test
 
 # 4. 编译
 .PHONY: build
-build: mk_out vet
+build: mk_out vet lint-diff
 	@echo -e "$(GREEN)=== 编译当前平台二进制 ===$(END)"
 	CGO_ENABLED=$(CGO_ENABLED) $(GO_BUILD) $(BUILD_FLAGS) -o $(OUT_DIR)/$(APP_NAME) $(MAIN_FILE)
 	@echo -e "$(GREEN)输出: $(OUT_DIR)/$(APP_NAME)$(END)"
 
 .PHONY: cross
-cross: mk_out vet
+cross: mk_out vet lint-diff
 	@echo -e "$(GREEN)=== 全平台交叉编译 ===$(END)"
 	$(foreach platform,$(PLATFORMS),\
 		GOOS=$(word 1,$(subst /, ,$(platform))) \
