@@ -18,6 +18,7 @@ import (
 func init() {
 	jenkinsAddCmd.Flags().StringP("user", "u", "", "jenkins username (default: alias)")
 	jenkinsAddCmd.Flags().String("host", "", "jenkins host address")
+	jenkinsAddCmd.Flags().Bool("insecure", false, "skip TLS certificate verification (for self-signed certs)")
 
 	jenkinsCreateCmd.Flags().StringP("file", "f", "", "xml config file path for creating a single job")
 	jenkinsCreateCmd.Flags().StringP("dir", "d", "", "directory containing job configs (dir/{job_name}/xml)")
@@ -105,13 +106,14 @@ var jenkinsListCmd = &cobra.Command{
 var jenkinsAddCmd = &cobra.Command{
 	Use:     "add <alias> <password|token>",
 	Short:   "add jenkins config",
-	Example: "seneschal jenkins add myjenkins mytoken -u admin --host http://jenkins.example.com:8080",
+	Example: "  seneschal jenkins add myjenkins mytoken -u admin --host http://jenkins.example.com:8080\n  seneschal jenkins add selfsigned <token> --host https://10.0.0.1:32005 --insecure",
 	Args:    cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alias := args[0]
 		password := args[1]
 		host, _ := cmd.Flags().GetString("host")
 		user, _ := cmd.Flags().GetString("user")
+			insecure, _ := cmd.Flags().GetBool("insecure")
 
 		if host == "" {
 			return fmt.Errorf("host is required, use --host flag")
@@ -125,6 +127,7 @@ var jenkinsAddCmd = &cobra.Command{
 			Host:     host,
 			UserName: user,
 			Password: password,
+			InsecureSkipVerify: insecure,
 		}
 		if err := config.WriteJenkinsConfig(cfg); err != nil {
 			return fmt.Errorf("failed to write jenkins config: %w", err)

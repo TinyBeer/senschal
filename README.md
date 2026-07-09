@@ -52,6 +52,9 @@ seneschal cp server1:/src/file.txt server2:/dst/
 # 添加 Jenkins 配置
 seneschal jenkins add myjenkins mytoken --host http://jenkins.example.com -u admin
 
+# 添加使用自签证书的 Jenkins（跳过 TLS 验证）
+seneschal jenkins add selfsigned <token> --host https://10.0.0.1:32005 --insecure
+
 # 列出 Jenkins 实例的 Job
 seneschal jenkins list          # 列出所有 Jenkins 配置
 seneschal jenkins list myjenkins # 列出指定实例的 Job

@@ -9,10 +9,11 @@ import (
 )
 
 type Jenkins struct {
-	Alias    string `mapstructure:"alias"`
-	Host     string `mapstructure:"host"`
-	UserName string `mapstructure:"user_name"`
-	Password string `mapstructure:"password"` // password or token
+	Alias              string `mapstructure:"alias"`
+	Host               string `mapstructure:"host"`
+	UserName           string `mapstructure:"user_name"`
+	Password           string `mapstructure:"password"` // password or token
+	InsecureSkipVerify bool   `mapstructure:"insecure_skip_verify"`
 }
 
 func GetJenkinsConfigMap() (map[string]*Jenkins, error) {

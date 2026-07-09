@@ -2,8 +2,10 @@ package runner
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log/slog"
+	"net/http"
 
 	"seneschal/config"
 	"seneschal/internal/ilog"
@@ -22,7 +24,15 @@ func NewJenkinsClient(alias string) (*gojenkins.Jenkins, context.Context, error)
 		return nil, nil, fmt.Errorf("missing jenkins config of %s", alias)
 	}
 
-	jenkins := gojenkins.CreateJenkins(nil, jc.Host, jc.UserName, jc.Password)
+	var httpClient *http.Client
+	if jc.InsecureSkipVerify {
+		httpClient = &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec
+			},
+		}
+	}
+	jenkins := gojenkins.CreateJenkins(httpClient, jc.Host, jc.UserName, jc.Password)
 	ctx := ilog.NewTraceCtx(context.Background())
 	_, err = jenkins.Init(ctx)
 	if err != nil {
