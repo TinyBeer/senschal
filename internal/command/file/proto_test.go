@@ -19,7 +19,8 @@ func TestProtoMessageWithField(t *testing.T) {
 }
 
 func TestGenerateMessage_WithFields(t *testing.T) {
-	result := GenerateMessage("Foo",
+	result := GenerateMessage(
+		"Foo",
 		ProtoMessageWithField("string", "name"),
 		ProtoMessageWithField("int32", "age"),
 	)

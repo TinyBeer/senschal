@@ -4,12 +4,12 @@ import (
 	"context"
 	"log/slog"
 	"os"
+
 	"seneschal/cmd"
 	"seneschal/internal/ilog"
 )
 
 func main() {
-
 	ilog.UseTraceLogger(os.Stdout)
 
 	ctx := ilog.NewTraceCtx(context.Background())
@@ -20,6 +20,7 @@ func main() {
 			"failed to execute command",
 			ilog.ErrorAttr(
 				err,
-			))
+			),
+		)
 	}
 }

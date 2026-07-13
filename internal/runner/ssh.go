@@ -139,7 +139,8 @@ func TransferFileWithResume(ctx context.Context, client *ssh.Client, localFilePa
 	if err == nil {
 		_, err = fmt.Sscanf(string(output), "%d", &remoteFileSize)
 		if err != nil {
-			slog.ErrorContext(ctx, 
+			slog.ErrorContext(
+				ctx,
 				"failed to scan remote file size from output",
 				ilog.ErrorAttr(err),
 			)

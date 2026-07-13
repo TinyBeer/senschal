@@ -529,7 +529,6 @@ func TestSSHClient_ListDir(t *testing.T) {
 	})
 }
 
-
 func TestSSHClient_MkdirAll(t *testing.T) {
 	workDir := t.TempDir()
 	srv := startPasswordSSHServer(t, workDir)

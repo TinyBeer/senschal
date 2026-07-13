@@ -50,7 +50,7 @@ func TestImageToAscii_WithColors(t *testing.T) {
 
 	result := imageToAscii(img, 1, 1, false, true)
 	assert.Contains(t, result, "\033[38;2;255;0;0m") // ANSI red
-	assert.Contains(t, result, "\033[0m")             // reset
+	assert.Contains(t, result, "\033[0m")            // reset
 }
 
 func TestImageToAscii_AutoHeight(t *testing.T) {

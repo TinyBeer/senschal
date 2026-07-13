@@ -153,10 +153,10 @@ var hostListCmd = &cobra.Command{
 
 // host edit config
 var hostEditCmd = &cobra.Command{
-	Use:   "edit <alias>",
-	Short: "edit host config",
+	Use:     "edit <alias>",
+	Short:   "edit host config",
 	Example: "seneschal host edit myserver",
-	Args:  cobra.ExactArgs(1),
+	Args:    cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		alias := args[0]
 

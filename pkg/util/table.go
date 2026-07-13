@@ -7,8 +7,9 @@ import (
 	"log/slog"
 	"os"
 	"reflect"
-	"seneschal/internal/ilog"
 	"sort"
+
+	"seneschal/internal/ilog"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/renderer"
@@ -65,13 +66,15 @@ func ShowTable(ctx context.Context, data [][]string) {
 	var err error
 	err = table.Bulk(data[1:])
 	if err != nil {
-		slog.ErrorContext(ctx, "bulk table failed",
+		slog.ErrorContext(
+			ctx, "bulk table failed",
 			ilog.ErrorAttr(err),
 		)
 	}
 	err = table.Render()
 	if err != nil {
-		slog.ErrorContext(ctx, "render table failed",
+		slog.ErrorContext(
+			ctx, "render table failed",
 			ilog.ErrorAttr(err),
 		)
 	}

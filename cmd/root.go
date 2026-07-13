@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+
 	"seneschal/internal/ilog"
 
 	"github.com/spf13/cobra"

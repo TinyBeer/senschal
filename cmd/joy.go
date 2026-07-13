@@ -127,7 +127,8 @@ var joyInterCmd = &cobra.Command{
 		reqs := []string{apiReq}
 		rets := []string{apiRes}
 
-		slog.DebugContext(ctx, "proto file info",
+		slog.DebugContext(
+			ctx, "proto file info",
 			"lobby", targetLobbyProtoFile,
 			"service", targetServiceProtoFile,
 			"register", pc.GetLobbyRegisterFile(),

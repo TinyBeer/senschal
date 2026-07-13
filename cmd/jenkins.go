@@ -113,7 +113,7 @@ var jenkinsAddCmd = &cobra.Command{
 		password := args[1]
 		host, _ := cmd.Flags().GetString("host")
 		user, _ := cmd.Flags().GetString("user")
-			insecure, _ := cmd.Flags().GetBool("insecure")
+		insecure, _ := cmd.Flags().GetBool("insecure")
 
 		if host == "" {
 			return fmt.Errorf("host is required, use --host flag")
@@ -123,10 +123,10 @@ var jenkinsAddCmd = &cobra.Command{
 		}
 
 		cfg := &config.Jenkins{
-			Alias:    alias,
-			Host:     host,
-			UserName: user,
-			Password: password,
+			Alias:              alias,
+			Host:               host,
+			UserName:           user,
+			Password:           password,
 			InsecureSkipVerify: insecure,
 		}
 		if err := config.WriteJenkinsConfig(cfg); err != nil {

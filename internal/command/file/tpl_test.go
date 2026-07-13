@@ -47,7 +47,7 @@ count = 3
 
 	// gen dir
 	genDir = filepath.Join(tmpDir, "_gen")
-	return
+	return tplPath, genDir, settingPath
 }
 
 func TestExecuteTemplate_Success(t *testing.T) {
