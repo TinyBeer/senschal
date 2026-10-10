@@ -119,8 +119,8 @@ seneschal joy tpl exec mytpl -d ./out -s custom.toml -n myapp
 ### Bug 修复
 
 - [x] 渲染多文件夹下的同名模板时，所有生成结果使用了相同模板
-  原因：使用ParseFiles/ParseGlob时，使用文件名作为模板唯一索引，如果出现同名模板时候会进行覆盖
-  解决方案：使用完整路径作为模板索引，参考：
+      原因：使用ParseFiles/ParseGlob时，使用文件名作为模板唯一索引，如果出现同名模板时候会进行覆盖
+      解决方案：使用完整路径作为模板索引，参考：
 
   ```golang
   // LoadTemplates 递归加载目录，模板名使用完整相对路径，杜绝重名冲突
@@ -158,7 +158,7 @@ seneschal joy tpl exec mytpl -d ./out -s custom.toml -n myapp
     tpl.ExecuteTemplate(os.Stdout, "templates/user/list.tmpl", nil)
   }
   ```
-  
+
   执行计划：
   - [x] 使用 `pkg/util/file` 中的工具函数筛选文件
   - [x] 使用完整相对路径作为唯一索引，避免模板覆盖
@@ -173,6 +173,8 @@ seneschal joy tpl exec mytpl -d ./out -s custom.toml -n myapp
 
 ### 优化
 
+- [ ] 优化 joy inter 命令中 proto 文件编辑方式
+      使用 `github.com/jhump/protoreflect/v2` 和 `github.com/bufbuild/protocompile` 更优雅的编辑proto文件
 - [x] 实现 host up/down 文件上传下载命令
 - [x] 实现 fsutil.CopyDir 目录递归拷贝
 - [x] 重构文件传输功能，优化代码结构
