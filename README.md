@@ -175,6 +175,7 @@ seneschal joy tpl exec mytpl -d ./out -s custom.toml -n myapp
 
 - [ ] 优化 joy inter 命令中 proto 文件编辑方式
       使用 `github.com/jhump/protoreflect/v2` 和 `github.com/bufbuild/protocompile` 更优雅的编辑proto文件
+      protoreflect 编辑 proto 文件不方便实现文件的最小改动，暂时不使用。
 - [x] 实现 host up/down 文件上传下载命令
 - [x] 实现 fsutil.CopyDir 目录递归拷贝
 - [x] 重构文件传输功能，优化代码结构
